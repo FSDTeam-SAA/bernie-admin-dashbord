@@ -14,49 +14,41 @@ import Image from "next/image";
 import { useState } from "react";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard Overview", href: "/", icon: LayoutDashboard },
   {
-    name: "Requested delivary",
+    name: "Requested Delivery",
     href: "/requested-delivary",
     icon: PackageOpen,
   },
   {
-    name: "My delivary",
+    name: "My Delivery",
     href: "/my-delivary",
     icon: TruckElectric,
-  }
+  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-   const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex h-screen sticky bottom-0 top-0 w-[350px] flex-col bg-[#212121] z-50">
-      {/* Logo */}
-      <div className="h-[80px] flex items-center justify-start ml-3">
-        <div className="text-2xl flex gap-1 font-bold text-blue-600 uppercase tracking-wider">
-          <div className="h-[50px] w-[50px]">
-            <Image
-              src="/images/dashboardLogo.gif"
-              alt=""
-              height={200}
-              width={200}
-              className="object-cover"
-            />
-          </div>
-          <div>
-            <h1 className="text-green-500">
-              T<span className="text-red-400">O</span>MAT
-              <span className="text-red-400">O</span>
-            </h1>
-            <p className="text-white text-[10px]">Tomaot.LID</p>
-          </div>
+    <div className="flex h-screen sticky top-0 bottom-0 w-[380px] flex-col bg-white z-50 shadow-[4px_0px_40px_0px_rgba(0,0,0,0.04)]">
+      {/* Logo Section - Perfectly Centered without borders */}
+      <div className="h-[120px] flex items-center justify-center px-6">
+        <div className="relative h-[60px] w-[190px] flex items-center justify-center">
+          <Image
+            src="/images/d-logo.png"
+            alt="BubbleDrive Logo"
+            height={200}
+            width={200}
+            className="object-contain max-h-full max-w-full"
+            priority
+          />
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2 flex flex-col items-center justify-start px-3 overflow-y-auto mt-3">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-2 flex flex-col items-stretch px-4 overflow-y-auto">
         {navigation.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -67,37 +59,35 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex w-[90%] mx-auto items-center justify-start gap-2 space-y-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                "flex items-center gap-4 rounded-[12px] px-5 py-4 transition-all duration-200 group text-[16px]",
                 isActive
-                  ? "bg-white text-black"
-                  : "text-slate-300 hover:bg-slate-600/50 hover:text-white"
+                  ? "bg-[#0052cc] text-white font-medium shadow-[0px_8px_30px_0px_#00000029]"
+                  : "text-[#555555] hover:bg-slate-50 hover:text-black font-normal",
               )}
             >
               <item.icon
                 className={cn(
-                  "h-6 w-6 transition-colors duration-200",
-                  isActive ? "text-black" : ""
+                  "h-[22px] w-[22px] shrink-0 transition-colors duration-200",
+                  isActive
+                    ? "text-white"
+                    : "text-[#555555] group-hover:text-black",
                 )}
               />
-              <span
-                className={cn(
-                  "font-normal text-base leading-[120%] transition-colors duration-200 text-center",
-                  isActive ? "text-black font-medium" : ""
-                )}
-              >
-                {item.name}
-              </span>
+              <span className="leading-none">{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
-       {/* Logout fixed at bottom */}
-      <div className="p-6">
-        <div onClick={() => setOpen(true)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white cursor-pointer">
-          <LogOut className="h-5 w-5" />
-          <span className="font-normal text-base leading-none">Log Out</span>
-        </div>
+      {/* Logout Action at the bottom */}
+      <div className="p-4 mb-4">
+        <button
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-[16px] font-normal text-[#FF0000] transition-colors duration-200 hover:bg-red-50/50 cursor-pointer border-none bg-transparent"
+        >
+          <LogOut className="h-[22px] w-[22px] shrink-0 text-[#FF0000]" />
+          <span className="leading-none">Log Out</span>
+        </button>
       </div>
 
       {/* <LogoutModal
