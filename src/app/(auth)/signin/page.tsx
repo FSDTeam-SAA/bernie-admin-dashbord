@@ -1,12 +1,12 @@
-import React from "react";
-import LoginForm from "./_components/SignInForm";
+import SigninPage from '@/presentation/auth/SigninPage'
+import React from 'react'
 
 function page() {
   return (
     <div>
-      <LoginForm />
+      <SigninPage />
     </div>
-  );
+  )
 }
 
-export default page;
+export default page
