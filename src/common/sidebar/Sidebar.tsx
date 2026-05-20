@@ -21,8 +21,23 @@ const navigation = [
     icon: PackageOpen,
   },
   {
-    name: "My Delivery",
-    href: "/my-delivary",
+    name: "Journey Management",
+    href: "/journey-management",
+    icon: TruckElectric,
+  },
+  {
+    name: "Catagory Management",
+    href: "/category-management",
+    icon: TruckElectric,
+  },
+  {
+    name: "Token Management",
+    href: "/token-management",
+    icon: TruckElectric,
+  },
+  {
+    name: "Set Prizes",
+    href: "/set-prizes",
     icon: TruckElectric,
   },
 ];
