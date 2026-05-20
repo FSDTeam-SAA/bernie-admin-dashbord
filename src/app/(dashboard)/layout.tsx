@@ -1,6 +1,6 @@
 // import AppProvider from "@/provider/AppProvider";
 // import Header from "@/components/header/Header";
-import { Sidebar } from "@/components/sidebar/Sidebar";
+import { Sidebar } from "@/common/sidebar/Sidebar";
 import React from "react";
 
 function layout({ children }: { children: React.ReactNode }) {

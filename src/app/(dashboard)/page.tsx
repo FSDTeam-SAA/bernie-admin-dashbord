@@ -1,7 +1,8 @@
-import DashboardHeader from '@/components/header/Header'
+import DashboardHeader from '@/common/header/Header'
 import EarningOverview from '@/presentation/_components/EarningOverview'
 import JourneyOverview from '@/presentation/_components/JourneyOverview'
 import OverviewCard from '@/presentation/_components/Overviewcard'
+import RecentActivity from '@/presentation/_components/RecentActivity'
 import React from 'react'
 
 function page() {
@@ -13,6 +14,7 @@ function page() {
         <EarningOverview />
         <JourneyOverview />
       </div>
+      <RecentActivity />
     </div>
   )
 }
