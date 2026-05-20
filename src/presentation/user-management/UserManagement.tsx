@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Table,
@@ -40,52 +40,51 @@ export default function MembershipTable(): React.JSX.Element {
   const session = useSession();
   const TOKEN = session?.data?.user?.accessToken;
 
-  // Fetch memberships from API
-const { data } = useQuery({
-  queryKey: ["memberships"],
-  queryFn: async () => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/memberships/all`,
-      {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json",
+  // Fetch memberships from API with server-side search
+  const { data, refetch, isLoading } = useQuery({
+    queryKey: ["memberships", searchQuery],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/memberships/all?search=${encodeURIComponent(searchQuery)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${TOKEN}`,
+            "Content-Type": "application/json",
+          },
         },
-      }
-    );
+      );
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch memberships");
-    }
-
-    return res.json();
-  },
-});
+      if (!res.ok) throw new Error("Failed to fetch memberships");
+      return res.json();
+    },
+  });
 
   // Extract memberships array safely
   const memberships: Membership[] = data?.data?.memberships || [];
 
-  // Filter and paginate
-  const filteredMemberships = memberships.filter(
-    (m) =>
-      m.userId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.userId.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const totalPages = Math.max(
-    Math.ceil(filteredMemberships.length / rowsPerPage),
-    1,
-  );
+  // Pagination
+  const totalPages = Math.max(Math.ceil(memberships.length / rowsPerPage), 1);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedMemberships = filteredMemberships.slice(
+  const paginatedMemberships = memberships.slice(
     startIndex,
     startIndex + rowsPerPage,
   );
-  const showingStart = filteredMemberships.length === 0 ? 0 : startIndex + 1;
+  const showingStart = memberships.length === 0 ? 0 : startIndex + 1;
   const showingEnd = Math.min(
     startIndex + paginatedMemberships.length,
-    filteredMemberships.length,
+    memberships.length,
   );
+
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  // Refetch data whenever searchQuery changes
+  useEffect(() => {
+    refetch();
+  }, [searchQuery]);
 
   return (
     <div className="w-full text-[#1E2B4B]">
@@ -96,10 +95,7 @@ const { data } = useQuery({
           type="text"
           placeholder="Search By Name Or Email..."
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={handleSearchChange}
           className="w-full pl-14 pr-5 py-4 bg-[#F1F5F9] border-0 !rounded-[16px] text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
         />
       </div>
@@ -129,7 +125,16 @@ const { data } = useQuery({
           </TableHeader>
 
           <TableBody className="divide-y divide-slate-100">
-            {paginatedMemberships.length > 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="text-center py-12 text-slate-400 font-medium"
+                >
+                  Loading memberships...
+                </TableCell>
+              </TableRow>
+            ) : paginatedMemberships.length > 0 ? (
               paginatedMemberships.map((m) => (
                 <TableRow
                   key={m._id}
@@ -167,8 +172,7 @@ const { data } = useQuery({
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 text-sm text-slate-400 font-medium">
         <div>
-          Showing {showingStart} to {showingEnd} of {filteredMemberships.length}{" "}
-          results
+          Showing {showingStart} to {showingEnd} of {memberships.length} results
         </div>
 
         <div className="flex items-center gap-1.5 select-none">
