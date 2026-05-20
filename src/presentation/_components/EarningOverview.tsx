@@ -15,16 +15,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 
-const chartData = [
-  { day: "Mon", earnings: 420 },
-  { day: "Tue", earnings: 280 },
-  { day: "Wed", earnings: 320 },
-  { day: "Thu", earnings: 900 },
-  { day: "Fri", earnings: 550 },
-  { day: "Sat", earnings: 700 },
-  { day: "Sun", earnings: 1350 },
+const defaultChartData = [
+  { day: "Sun", earnings: 0 },
+  { day: "Mon", earnings: 0 },
+  { day: "Tue", earnings: 0 },
+  { day: "Wed", earnings: 0 },
+  { day: "Thu", earnings: 0 },
+  { day: "Fri", earnings: 0 },
+  { day: "Sat", earnings: 0 },
 ];
+
+interface DashboardChartsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    weeklyEarnings: {
+      weeklyData: typeof defaultChartData;
+    };
+  };
+}
 
 const chartConfig = {
   earnings: {
@@ -34,6 +46,31 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function EarningOverview(): React.JSX.Element {
+  const { data: session, status } = useSession();
+  const accessToken = session?.user?.accessToken;
+
+  const { data: chartData = defaultChartData } = useQuery({
+    queryKey: ["dashboard-charts", "weekly-earnings"],
+    enabled: status === "authenticated",
+    queryFn: async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/dashboard/charts`, {
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      });
+
+      const response = (await res.json()) as DashboardChartsResponse;
+
+      if (!res.ok || !response.success) {
+        throw new Error(response.message || "Failed to fetch dashboard charts");
+      }
+
+      return response.data.weeklyEarnings.weeklyData;
+    },
+  });
+
   return (
     <div className="h-full w-full bg-white p-6 rounded-[16px] shadow-[0px_0px_10px_0px_#0000001A] font-sans text-[#1E2B4B]">
       {/* Header */}

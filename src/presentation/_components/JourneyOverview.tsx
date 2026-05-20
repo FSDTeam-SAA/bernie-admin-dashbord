@@ -2,8 +2,10 @@
 import React from "react"
 import { Cell, Pie, PieChart } from "recharts"
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
+import { useQuery } from "@tanstack/react-query"
+import { useSession } from "next-auth/react"
 
-const chartData = [
+const defaultChartData = [
   { segment: "ulez", value: 30, amount: "30", percentage: "30.0%", fill: "var(--color-ulez)" },
   { segment: "tunnel", value: 30, amount: "30", percentage: "30.0%", fill: "var(--color-tunnel)" },
   { segment: "congestion", value: 15, amount: "15", percentage: "15.0%", fill: "var(--color-congestion)" },
@@ -17,7 +19,59 @@ const chartConfig = {
   others: { label: "Others", color: "#486EFD" },
 } satisfies ChartConfig
 
+interface CategoryStat {
+  _id: string;
+  count: number;
+  percentage: number;
+}
+
+interface DashboardChartsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    categoryStats: {
+      categories: CategoryStat[];
+    };
+  };
+}
+
 export default function JourneyOverview(): React.JSX.Element {
+  const { data: session, status } = useSession()
+  const accessToken = session?.user?.accessToken
+
+  const { data: chartData = defaultChartData } = useQuery({
+    queryKey: ["dashboard-charts", "category-stats"],
+    enabled: status === "authenticated",
+    queryFn: async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/dashboard/charts`, {
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      })
+
+      const response = (await res.json()) as DashboardChartsResponse
+
+      if (!res.ok || !response.success) {
+        throw new Error(response.message || "Failed to fetch dashboard charts")
+      }
+
+      return response.data.categoryStats.categories.map((category, index) => {
+        const segments = ["ulez", "tunnel", "congestion", "others"] as const
+        const segment = segments[index] ?? "others"
+
+        return {
+          segment,
+          value: category.count,
+          amount: String(category.count),
+          percentage: `${category.percentage.toFixed(1)}%`,
+          fill: `var(--color-${segment})`,
+        }
+      })
+    },
+  })
+
   return (
     <div className="flex h-full w-full flex-col bg-white p-6 rounded-[16px] shadow-[0px_0px_10px_0px_#0000001A] font-sans text-[#1E2B4B]">
       {/* Header */}

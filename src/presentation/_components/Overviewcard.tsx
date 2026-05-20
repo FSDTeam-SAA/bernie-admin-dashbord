@@ -1,5 +1,9 @@
+"use client";
+
 import React from 'react';
 import { Car, User } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 
 // 1. Define TypeScript interfaces for strict type checking
 interface CardItemProps {
@@ -15,6 +19,16 @@ interface CardData {
   value: string | number;
   icon: React.ComponentType<{ className?: string }> | (() => React.JSX.Element);
   gradientClass: string;
+}
+
+interface DashboardStatsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    totalRevenue: number;
+    activeJourneyUsers: number;
+    monthlyTokenCount: number;
+  };
 }
 
 // 2. Sub-component with explicit TS props
@@ -43,24 +57,49 @@ const CardItem: React.FC<CardItemProps> = ({ title, value, icon: Icon, gradientC
 
 // 3. Main Dashboard Overview Component
 export default function OverviewCard(): React.JSX.Element {
+  const { data: session, status } = useSession();
+  const accessToken = session?.user?.accessToken;
+
+  const { data: overviewData } = useQuery({
+    queryKey: ['dashboard-stats'],
+    enabled: status === 'authenticated',
+    queryFn: async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/dashboard/stats`, {
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      });
+
+      const response = (await res.json()) as DashboardStatsResponse;
+
+      if (!res.ok || !response.success) {
+        throw new Error(response.message || 'Failed to fetch dashboard stats');
+      }
+
+      return response.data;
+    },
+  });
+
   // Strongly typed data array to prevent structural errors
   const cardData: CardData[] = [
     {
       title: 'Total Revenue',
-      value: '£2554',
+      value: `£${overviewData?.totalRevenue ?? 0}`,
       // Custom inline text icon so the '£' perfectly matches your UI screenshot style
       icon: () => <span className="text-lg font-extrabold leading-none select-none">£</span>,
       gradientClass: 'bg-[#002855]', 
     },
     {
       title: 'Active Journey Users',
-      value: 228,
+      value: overviewData?.activeJourneyUsers ?? 0,
       icon: Car, // Lucide Car icon
       gradientClass: 'bg-[#0052B4]', 
     },
     {
       title: 'Monthly Lottery Participation',
-      value: 124,
+      value: overviewData?.monthlyTokenCount ?? 0,
       icon: User, // Lucide User icon
       gradientClass: 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB]', 
     },

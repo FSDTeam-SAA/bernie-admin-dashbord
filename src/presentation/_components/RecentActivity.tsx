@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   Table,
@@ -7,6 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 
 interface ActivityData {
   token: string;
@@ -15,28 +19,58 @@ interface ActivityData {
   registration: string;
 }
 
-const tableData: ActivityData[] = [
-  {
-    token: "£5",
-    totalAmount: "£45",
-    date: "11-12-2026",
-    registration: "LX 334 GHO",
-  },
-  {
-    token: "£5",
-    totalAmount: "£45",
-    date: "11-12-2026",
-    registration: "LKJ 787 HUI",
-  },
-  {
-    token: "£5",
-    totalAmount: "£40",
-    date: "11-12-2026",
-    registration: "2332 KJ KKK",
-  },
-];
+interface Transaction {
+  _id: string;
+  vehicleNumber: string;
+  totalAmount: number;
+  purchaseDate: string;
+  serviceType: string;
+  serviceName?: string;
+}
+
+interface TransactionsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    transactions: Transaction[];
+  };
+}
+
+function formatDate(date: string) {
+  return new Intl.DateTimeFormat("en-GB").format(new Date(date)).replaceAll("/", "-");
+}
 
 export default function RecentActivity(): React.JSX.Element {
+  const { data: session, status } = useSession();
+  const accessToken = session?.user?.accessToken;
+
+  const { data: tableData = [] } = useQuery({
+    queryKey: ["recent-transactions"],
+    enabled: status === "authenticated",
+    queryFn: async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/transactions?limit=5`, {
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      });
+
+      const response = (await res.json()) as TransactionsResponse;
+
+      if (!res.ok || !response.success) {
+        throw new Error(response.message || "Failed to fetch transactions");
+      }
+
+      return response.data.transactions.map<ActivityData>((transaction) => ({
+        token: transaction.serviceName ?? transaction.serviceType,
+        totalAmount: `£${transaction.totalAmount}`,
+        date: formatDate(transaction.purchaseDate),
+        registration: transaction.vehicleNumber,
+      }));
+    },
+  });
+
   return (
     <div className="mt-6 w-full rounded-[16px] bg-white font-sans text-[#1E2B4B]">
       <div className="mb-6 flex items-center justify-between gap-4">
