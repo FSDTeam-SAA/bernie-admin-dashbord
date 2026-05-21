@@ -40,6 +40,31 @@ const navigation = [
     href: "/set-prizes",
     icon: TruckElectric,
   },
+  {
+    name: "Transaction Management",
+    href: "/transaction-management",
+    icon: TruckElectric,
+  },
+  {
+    name: "Subscription Management",
+    href: "/subscription-management",
+    icon: TruckElectric,
+  },
+  {
+    name: "Membership Management",
+    href: "/membership-management",
+    icon: TruckElectric,
+  },
+  {
+    name: "Insurance Listing",
+    href: "/insurance-listing",
+    icon: TruckElectric,
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: TruckElectric,
+  },
 ];
 
 export function Sidebar() {
