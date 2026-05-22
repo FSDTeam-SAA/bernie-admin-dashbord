@@ -681,7 +681,7 @@ export default function CategoryManagement(): React.JSX.Element {
           <DialogHeader>
             <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this category? This action cannot
+              Are you sure you want to delete this category?? This action cannot
               be undone.
             </DialogDescription>
           </DialogHeader>
