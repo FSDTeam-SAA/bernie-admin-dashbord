@@ -1,188 +1,480 @@
 "use client";
 
-import React, { useState } from 'react';
-import { CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
-export default function Settings() {
-  // Tab handling state: 'profile' | 'security'
-  const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
+interface UserAddress {
+  country: string;
+  cityState: string;
+  roadArea: string;
+  postalCode: string;
+  taxId: string;
+}
 
-  // Password visibility toggles
+interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  dob: string | null;
+  gender: string;
+  role: string;
+  stripeAccountId: string | null;
+  bio: string;
+  profileImage: string;
+  multiProfileImage: string[];
+  pdfFile: string;
+  otp: string | null;
+  otpExpires: string | null;
+  otpVerified: boolean;
+  resetExpires: string | null;
+  isVerified: boolean;
+  refreshToken: string;
+  hasActiveSubscription: boolean;
+  subscriptionExpireDate: string | null;
+  blockedUsers: string[];
+  language: string;
+  address: UserAddress;
+}
+
+interface ProfileResponse {
+  status?: boolean;
+  success?: boolean;
+  message?: string;
+  data?: UserProfile;
+}
+
+interface ProfileFormState {
+  name: string;
+  email: string;
+  gender: string;
+}
+
+interface PasswordFormState {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+const emptyProfileForm: ProfileFormState = {
+  name: "",
+  email: "",
+  gender: "",
+};
+
+const emptyPasswordForm: PasswordFormState = {
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+};
+
+const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+const readJsonResponse = async <T,>(res: Response): Promise<T> => {
+  const text = await res.text();
+  return text ? JSON.parse(text) : ({} as T);
+};
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "U";
+
+export default function Settings(): React.JSX.Element {
+  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
+  const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [profileData, setProfileData] =
+    useState<ProfileFormState>(emptyProfileForm);
+  const [passwordData, setPasswordData] =
+    useState<PasswordFormState>(emptyPasswordForm);
 
-  // Form states
-  const [profileData, setProfileData] = useState({
-    name: 'Mandy',
-    email: 'mandychen@gmail.com',
-    phone: '+1 (222) 155-0470'
+  const queryClient = useQueryClient();
+  const { data: session, status } = useSession();
+  const accessToken = session?.user?.accessToken;
+
+  const authHeaders = useMemo(
+    () => ({
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    }),
+    [accessToken],
+  );
+
+  const profileQuery = useQuery<ProfileResponse>({
+    queryKey: ["user-profile"],
+    enabled: status === "authenticated" && Boolean(accessToken),
+    queryFn: async () => {
+      const res = await fetch(`${apiBaseUrl}/user/me`, {
+        headers: authHeaders,
+      });
+      const response = await readJsonResponse<ProfileResponse>(res);
+
+      if (!res.ok || response.status === false || response.success === false) {
+        throw new Error(response.message || "Failed to fetch user profile");
+      }
+
+      return response;
+    },
   });
 
-  const [passwordData, setPasswordData] = useState({
-    createPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  const userProfile = profileQuery.data?.data;
+
+  useEffect(() => {
+    if (!userProfile) return;
+
+    setProfileData({
+      name: userProfile.name || "",
+      email: userProfile.email || "",
+      gender: userProfile.gender || "",
+    });
+  }, [userProfile]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (body: { name: string; gender?: string }) => {
+      const res = await fetch(`${apiBaseUrl}/user/me`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify(body),
+      });
+      const response = await readJsonResponse<ProfileResponse>(res);
+
+      if (!res.ok || response.status === false || response.success === false) {
+        throw new Error(response.message || "Failed to update profile");
+      }
+
+      return response;
+    },
+    onSuccess: async () => {
+      toast.success("Profile updated successfully");
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (body: { oldPassword: string; newPassword: string }) => {
+      const res = await fetch(`${apiBaseUrl}/auth/change-password`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify(body),
+      });
+      const response = await readJsonResponse<{
+        message?: string;
+        status?: boolean;
+        success?: boolean;
+      }>(res);
+
+      if (!res.ok || response.status === false || response.success === false) {
+        throw new Error(response.message || "Failed to change password");
+      }
+
+      return response;
+    },
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+      setPasswordData(emptyPasswordForm);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const handleProfileSubmit = () => {
+    const name = profileData.name.trim();
+    const gender = profileData.gender.trim();
+
+    if (!name) {
+      toast.error("Name is required");
+      return;
+    }
+
+    updateProfileMutation.mutate({
+      name,
+      ...(gender ? { gender } : {}),
+    });
+  };
+
+  const handlePasswordSubmit = () => {
+    if (!passwordData.oldPassword || !passwordData.newPassword) {
+      toast.error("Old password and new password are required");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      oldPassword: passwordData.oldPassword,
+      newPassword: passwordData.newPassword,
+    });
+  };
+
+  const handleSave = () => {
+    if (activeTab === "profile") {
+      handleProfileSubmit();
+      return;
+    }
+
+    handlePasswordSubmit();
+  };
+
+  const handleDiscard = () => {
+    if (activeTab === "profile") {
+      setProfileData({
+        name: userProfile?.name || "",
+        email: userProfile?.email || "",
+        gender: userProfile?.gender || "",
+      });
+      return;
+    }
+
+    setPasswordData(emptyPasswordForm);
+  };
+
+  const isSaving =
+    updateProfileMutation.isPending || changePasswordMutation.isPending;
+  const displayName = profileData.name || userProfile?.name || "User";
+  const displayEmail = profileData.email || userProfile?.email || "";
+  const profileImage = userProfile?.profileImage || "";
 
   return (
-    <div className="w-full min-h-screen bg-[#f8fafc] p-6 font-sans antialiased text-[#1e293b]">
+    <div className="w-full min-h-screen font-sans antialiased text-[#1e293b]">
       <div className="max-w-[1400px] mx-auto space-y-6">
-
-        {/* Top Tab Navigation Bar */}
         <div className="w-full bg-white border border-slate-200 rounded-xl p-1.5 flex items-center">
           <button
-            onClick={() => setActiveTab('profile')}
+            type="button"
+            onClick={() => setActiveTab("profile")}
             className={`flex-1 text-center py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              activeTab === 'profile'
-                ? 'bg-[#0052cc] text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+              activeTab === "profile"
+                ? "bg-[#0052cc] text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             Profile
           </button>
           <button
-            onClick={() => setActiveTab('security')}
+            type="button"
+            onClick={() => setActiveTab("security")}
             className={`flex-1 text-center py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              activeTab === 'security'
-                ? 'bg-[#0052cc] text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+              activeTab === "security"
+                ? "bg-[#0052cc] text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             Security
           </button>
         </div>
 
-        {/* User Hero Banner Card */}
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden p-6 pb-8 flex flex-col items-center relative">
-          {/* Blue Header Banner */}
-          <div className="w-full h-44 bg-[#5c9ce6] rounded-xl mb-16 relative"></div>
+          <div className="w-full h-44 bg-[#5c9ce6] rounded-xl mb-16 relative" />
 
-          {/* Absolute Overlapping Avatar Profile */}
-          <div className="absolute top-32 w-28 h-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-200">
-            <img 
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256" 
-              alt="Jackson Doe"
-              className="w-full h-full object-cover"
-            />
+          <div
+            className="absolute top-32 w-28 h-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-200 bg-cover bg-center"
+            style={
+              profileImage ? { backgroundImage: `url(${profileImage})` } : {}
+            }
+          >
+            {!profileImage ? (
+              <div className="flex h-full w-full items-center justify-center bg-[#e6f0fa] text-3xl font-bold text-[#0052cc]">
+                {getInitials(displayName)}
+              </div>
+            ) : null}
           </div>
 
-          {/* Identity & Button */}
-          <div className="text-center space-y-4 mt-2">
+          <div className="text-center space-y-3 mt-2">
             <h1 className="text-3xl font-serif font-bold text-[#1a253c] tracking-wide flex items-center justify-center gap-1.5">
-              Jackson Doe
-              <CheckCircle2 className="w-5 h-5 text-[#0052cc] fill-[#0052cc] stroke-white stroke-[2.5]" />
+              {profileQuery.isLoading ? "Loading..." : displayName}
+              {userProfile?.isVerified ? (
+                <CheckCircle2 className="w-5 h-5 text-[#0052cc] fill-[#0052cc] stroke-white stroke-[2.5]" />
+              ) : null}
             </h1>
-            
-            <button className="bg-[#0052cc] hover:bg-blue-700 text-white text-xs font-semibold px-12 py-3 rounded-lg shadow-sm transition-colors">
-              Edit Profile
-            </button>
+
+            {displayEmail ? (
+              <p className="text-sm font-medium text-slate-400">
+                {displayEmail}
+              </p>
+            ) : null}
           </div>
         </div>
 
-        {/* Dynamic Form Content Box */}
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-8">
-          {activeTab === 'profile' ? (
-            /* ================= PROFILE TAB CONTENT ================= */
+          {profileQuery.isLoading ? (
+            <div className="flex items-center justify-center py-16 text-[#0052cc]">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : profileQuery.isError ? (
+            <div className="rounded-lg border border-red-100 bg-red-50 py-10 text-center text-sm font-medium text-red-500">
+              {profileQuery.error instanceof Error
+                ? profileQuery.error.message
+                : "Failed to fetch user profile"}
+            </div>
+          ) : activeTab === "profile" ? (
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-[#1a253c] tracking-tight">
                 Personal Information
               </h3>
-              
+
               <div className="space-y-4">
-                {/* Full Name Input */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-500">Name</label>
+                  <label className="text-xs font-bold text-slate-500">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                    onChange={(event) =>
+                      setProfileData({
+                        ...profileData,
+                        name: event.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
                   />
                 </div>
 
-                {/* Email and Phone Grid Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-slate-500">Email Address</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      Email Address
+                    </label>
                     <input
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                      disabled
+                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-400 cursor-not-allowed"
                     />
                   </div>
+
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-slate-500">Phone Number</label>
-                    <input
-                      type="text"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
+                    <label className="text-xs font-bold text-slate-500">
+                      Gender
+                    </label>
+                    <select
+                      value={profileData.gender}
+                      onChange={(event) =>
+                        setProfileData({
+                          ...profileData,
+                          gender: event.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            /* ================= SECURITY TAB CONTENT ================= */
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-[#1a253c] tracking-tight">
                 Password Settings
               </h3>
-              
+
               <div className="space-y-4">
-                {/* Create Password Row */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-500">Create Password</label>
-                  <input
-                    type="password"
-                    placeholder="********"
-                    value={passwordData.createPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, createPassword: e.target.value })}
-                    className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                  />
+                  <label className="text-xs font-bold text-slate-500">
+                    Old Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showOldPassword ? "text" : "password"}
+                      placeholder="********"
+                      value={passwordData.oldPassword}
+                      onChange={(event) =>
+                        setPasswordData({
+                          ...passwordData,
+                          oldPassword: event.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      {showOldPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                {/* New & Confirm Password Input Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* New Password */}
                   <div className="flex flex-col gap-2 relative">
-                    <label className="text-xs font-bold text-slate-500">New Password</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      New Password
+                    </label>
                     <div className="relative">
                       <input
-                        type={showNewPassword ? 'text' : 'password'}
+                        type={showNewPassword ? "text" : "password"}
                         placeholder="********"
                         value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all pr-12"
+                        onChange={(event) =>
+                          setPasswordData({
+                            ...passwordData,
+                            newPassword: event.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all pr-12"
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                       >
-                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
 
-                  {/* Confirm Password */}
                   <div className="flex flex-col gap-2 relative">
-                    <label className="text-xs font-bold text-slate-500">Confirm Password</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      Confirm Password
+                    </label>
                     <div className="relative">
                       <input
-                        type={showConfirmPassword ? 'text' : 'password'}
+                        type={showConfirmPassword ? "text" : "password"}
                         placeholder="********"
                         value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all pr-12"
+                        onChange={(event) =>
+                          setPasswordData({
+                            ...passwordData,
+                            confirmPassword: event.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all pr-12"
                       />
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                       >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -191,17 +483,28 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Action Bottom Control Buttons (Shared across tabs) */}
           <div className="flex justify-end gap-4 pt-8 mt-4 border-t border-slate-50">
-            <button className="px-6 py-3 bg-white border border-red-200 hover:bg-red-50 text-red-500 font-medium text-xs rounded-lg transition-colors">
+            <button
+              type="button"
+              onClick={handleDiscard}
+              disabled={isSaving}
+              className="px-6 py-3 bg-white border border-red-200 hover:bg-red-50 text-red-500 font-medium text-xs rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-60"
+            >
               Discard Changes
             </button>
-            <button className="px-6 py-3 bg-[#0052cc] hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors">
-              Save Changes
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={
+                isSaving || profileQuery.isLoading || profileQuery.isError
+              }
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0052cc] hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-60"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );
