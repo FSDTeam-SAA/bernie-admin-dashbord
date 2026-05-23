@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 
@@ -126,14 +127,7 @@ export default function MembershipTable(): React.JSX.Element {
 
           <TableBody className="divide-y divide-slate-100">
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-center py-12 text-slate-400 font-medium"
-                >
-                  Loading memberships...
-                </TableCell>
-              </TableRow>
+              <UserTableSkeleton />
             ) : paginatedMemberships.length > 0 ? (
               paginatedMemberships.map((m) => (
                 <TableRow
@@ -214,5 +208,29 @@ export default function MembershipTable(): React.JSX.Element {
         </div>
       </div>
     </div>
+  );
+}
+
+function UserTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, rowIndex) => (
+        <TableRow key={rowIndex} className="border-slate-100">
+          {Array.from({ length: 4 }).map((__, cellIndex) => (
+            <TableCell key={cellIndex} className="px-6 py-5">
+              <Skeleton
+                className={`mx-auto h-4 ${
+                  cellIndex === 1
+                    ? "w-44"
+                    : cellIndex === 2
+                      ? "w-36"
+                      : "w-24"
+                }`}
+              />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
   );
 }

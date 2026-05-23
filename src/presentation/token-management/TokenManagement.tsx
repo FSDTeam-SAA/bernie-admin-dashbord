@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Token {
   _id: string;
@@ -251,12 +252,16 @@ export default function TokenManagement(): React.JSX.Element {
             Name
           </span>
           <span className="text-2xl font-extrabold tracking-wide text-white sm:text-3xl">
-            {winnerQuery.isLoading
-              ? "Loading..."
-              : winner?.userId?.name || "Not Selected Yet!"}
+            {winnerQuery.isLoading ? (
+              <Skeleton className="mx-auto h-9 w-56 bg-white/20" />
+            ) : (
+              winner?.userId?.name || "Not Selected Yet!"
+            )}
           </span>
 
-          {winner ? (
+          {winnerQuery.isLoading ? (
+            <WinnerDetailSkeleton />
+          ) : winner ? (
             <div className="mt-7 grid w-full grid-cols-1 gap-3 text-left text-sm text-white/90 sm:grid-cols-2">
               <WinnerInfo label="Email" value={winner.userId?.email || "N/A"} />
               <WinnerInfo label="Vehicle" value={winner.vehicleNumber || "N/A"} />
@@ -371,14 +376,7 @@ export default function TokenManagement(): React.JSX.Element {
 
           <TableBody className="divide-y divide-slate-100">
             {tokenQuery.isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-12 text-slate-400 font-medium"
-                >
-                  Loading token details...
-                </TableCell>
-              </TableRow>
+              <TokenTableSkeleton />
             ) : tokens.length > 0 ? (
               tokens.map((token) => (
                 <TableRow
@@ -469,6 +467,45 @@ export default function TokenManagement(): React.JSX.Element {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function WinnerDetailSkeleton() {
+  return (
+    <div className="mt-7 grid w-full grid-cols-1 gap-3 text-left text-sm sm:grid-cols-2">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Skeleton
+          key={index}
+          className={`h-[70px] rounded-xl bg-white/20 ${
+            index === 4 ? "sm:col-span-2" : ""
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TokenTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, rowIndex) => (
+        <TableRow key={rowIndex} className="border-slate-100">
+          {Array.from({ length: 6 }).map((__, cellIndex) => (
+            <TableCell key={cellIndex} className="px-6 py-5">
+              <Skeleton
+                className={`mx-auto h-4 ${
+                  cellIndex === 1
+                    ? "w-44"
+                    : cellIndex === 4
+                      ? "w-32"
+                      : "w-24"
+                }`}
+              />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
   );
 }
 

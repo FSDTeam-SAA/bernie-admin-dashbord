@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -621,8 +622,8 @@ function JourneyTableSkeleton() {
         <TableRow key={rowIndex} className="border-slate-100">
           {Array.from({ length: 7 }, (_, cellIndex) => (
             <TableCell key={cellIndex} className="px-6 py-5">
-              <div
-                className={`h-4 animate-pulse rounded bg-slate-100 ${
+              <Skeleton
+                className={`h-4 ${
                   cellIndex === 1
                     ? "w-11/12"
                     : cellIndex === 6

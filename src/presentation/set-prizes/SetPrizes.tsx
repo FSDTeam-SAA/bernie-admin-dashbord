@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Prize {
   _id: string;
@@ -259,9 +260,7 @@ export default function SetPrizes(): React.JSX.Element {
     
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 py-10">
         {prizesQuery.isLoading ? (
-          <div className="col-span-full text-center py-12 text-slate-400 font-medium bg-white rounded-2xl border border-dashed border-slate-200">
-            Loading prizes...
-          </div>
+          <PrizeGridSkeleton />
         ) : prizes.length > 0 ? (
           prizes.map((prize) => (
             <div
@@ -380,6 +379,31 @@ export default function SetPrizes(): React.JSX.Element {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PrizeGridSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex min-h-[150px] flex-col justify-between rounded border border-slate-50 bg-white p-6 shadow-[4px_8px_22px_0px_#004EB01F]"
+        >
+          <div>
+            <Skeleton className="mb-3 h-6 w-4/5" />
+            <Skeleton className="h-5 w-2/3" />
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <Skeleton className="h-9 w-24" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-6 w-6" />
+              <Skeleton className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 

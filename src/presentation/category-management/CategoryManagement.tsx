@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -481,14 +482,7 @@ export default function CategoryManagement(): React.JSX.Element {
 
           <TableBody className="divide-y divide-slate-100">
             {categoryQuery.isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-center py-12 text-slate-400 font-medium"
-                >
-                  Loading category details...
-                </TableCell>
-              </TableRow>
+              <CategoryTableSkeleton />
             ) : categories.length > 0 ? (
               categories.map((category) => (
                 <TableRow
@@ -714,6 +708,30 @@ export default function CategoryManagement(): React.JSX.Element {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function CategoryTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, rowIndex) => (
+        <TableRow key={rowIndex} className="border-slate-100">
+          {Array.from({ length: 4 }).map((__, cellIndex) => (
+            <TableCell key={cellIndex} className="px-6 py-5">
+              <Skeleton
+                className={`mx-auto h-4 ${
+                  cellIndex === 0
+                    ? "w-40"
+                    : cellIndex === 3
+                      ? "w-20"
+                      : "w-24"
+                }`}
+              />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
   );
 }
 

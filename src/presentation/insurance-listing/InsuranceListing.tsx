@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Loader2,
   Pencil,
   Plus,
   Search,
@@ -25,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface InsuranceItem {
   _id: string;
@@ -366,9 +366,7 @@ export default function InsuranceListing(): React.JSX.Element {
         </h2>
 
         {insurancesQuery.isLoading ? (
-          <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white py-20 text-[#0052cc]">
-            <Loader2 className="h-10 w-10 animate-spin" />
-          </div>
+          <InsuranceGridSkeleton />
         ) : insurancesQuery.isError ? (
           <div className="rounded-lg border border-red-100 bg-red-50 py-12 text-center font-medium text-red-500">
             {insurancesQuery.error instanceof Error
@@ -545,9 +543,7 @@ export default function InsuranceListing(): React.JSX.Element {
           </DialogHeader>
 
           {singleInsuranceQuery.isLoading ? (
-            <div className="flex items-center justify-center py-10 text-[#0052cc]">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
+            <InsuranceDetailSkeleton />
           ) : selectedInsurance ? (
             <div className="space-y-3 text-sm text-slate-600">
               <DetailRow label="Name" value={selectedInsurance.name} />
@@ -628,6 +624,55 @@ export default function InsuranceListing(): React.JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function InsuranceGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex min-h-[286px] flex-col justify-between rounded-[8px] border border-slate-100 bg-white p-6 shadow-sm"
+        >
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-6 w-20 rounded-md" />
+              </div>
+              <Skeleton className="h-6 w-20 rounded-md" />
+            </div>
+            <Skeleton className="mb-3 h-8 w-48" />
+            <Skeleton className="mb-2 h-4 w-full max-w-md" />
+            <Skeleton className="mb-6 h-4 w-3/4 max-w-sm" />
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-56" />
+              <Skeleton className="h-4 w-52" />
+            </div>
+          </div>
+          <div>
+            <Skeleton className="mb-2 h-3 w-20" />
+            <Skeleton className="mb-4 h-5 w-24" />
+            <div className="grid grid-cols-3 gap-3">
+              <Skeleton className="h-11 rounded-lg" />
+              <Skeleton className="h-11 rounded-lg" />
+              <Skeleton className="h-11 rounded-lg" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InsuranceDetailSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Skeleton key={index} className="h-16 rounded-lg" />
+      ))}
     </div>
   );
 }

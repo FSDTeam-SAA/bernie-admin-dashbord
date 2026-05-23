@@ -4,6 +4,7 @@ import React from 'react';
 import { Car, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // 1. Define TypeScript interfaces for strict type checking
 interface CardItemProps {
@@ -60,7 +61,7 @@ export default function OverviewCard(): React.JSX.Element {
   const { data: session, status } = useSession();
   const accessToken = session?.user?.accessToken;
 
-  const { data: overviewData } = useQuery({
+  const { data: overviewData, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     enabled: status === 'authenticated',
     queryFn: async () => {
@@ -104,6 +105,27 @@ export default function OverviewCard(): React.JSX.Element {
       gradientClass: 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB]', 
     },
   ];
+
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex h-36 flex-col justify-between rounded-xl bg-white p-6 shadow-md"
+            >
+              <div className="flex items-start justify-between">
+                <Skeleton className="h-4 w-28 bg-slate-200/80" />
+                <Skeleton className="h-10 w-10 rounded-xl bg-slate-200/80" />
+              </div>
+              <Skeleton className="h-10 w-24 bg-slate-200/80" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

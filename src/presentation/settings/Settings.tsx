@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserAddress {
   country: string;
@@ -289,7 +290,9 @@ export default function Settings(): React.JSX.Element {
               profileImage ? { backgroundImage: `url(${profileImage})` } : {}
             }
           >
-            {!profileImage ? (
+            {profileQuery.isLoading ? (
+              <Skeleton className="h-full w-full rounded-full" />
+            ) : !profileImage ? (
               <div className="flex h-full w-full items-center justify-center bg-[#e6f0fa] text-3xl font-bold text-[#0052cc]">
                 {getInitials(displayName)}
               </div>
@@ -298,13 +301,19 @@ export default function Settings(): React.JSX.Element {
 
           <div className="text-center space-y-3 mt-2">
             <h1 className="text-3xl font-serif font-bold text-[#1a253c] tracking-wide flex items-center justify-center gap-1.5">
-              {profileQuery.isLoading ? "Loading..." : displayName}
+              {profileQuery.isLoading ? (
+                <Skeleton className="h-9 w-48" />
+              ) : (
+                displayName
+              )}
               {userProfile?.isVerified ? (
                 <CheckCircle2 className="w-5 h-5 text-[#0052cc] fill-[#0052cc] stroke-white stroke-[2.5]" />
               ) : null}
             </h1>
 
-            {displayEmail ? (
+            {profileQuery.isLoading ? (
+              <Skeleton className="mx-auto h-4 w-56" />
+            ) : displayEmail ? (
               <p className="text-sm font-medium text-slate-400">
                 {displayEmail}
               </p>
@@ -314,9 +323,7 @@ export default function Settings(): React.JSX.Element {
 
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-8">
           {profileQuery.isLoading ? (
-            <div className="flex items-center justify-center py-16 text-[#0052cc]">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
+            <SettingsFormSkeleton />
           ) : profileQuery.isError ? (
             <div className="rounded-lg border border-red-100 bg-red-50 py-10 text-center text-sm font-medium text-red-500">
               {profileQuery.error instanceof Error
@@ -521,6 +528,32 @@ export default function Settings(): React.JSX.Element {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsFormSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-6 w-48" />
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-12 w-full rounded-[12px]" />
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div key={index} className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-12 w-full rounded-[12px]" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex justify-end gap-4 border-t border-slate-50 pt-8">
+        <Skeleton className="h-10 w-32 rounded-[12px]" />
+        <Skeleton className="h-10 w-32 rounded-[12px]" />
       </div>
     </div>
   );

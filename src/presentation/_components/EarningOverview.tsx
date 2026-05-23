@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 
@@ -49,7 +50,7 @@ export default function EarningOverview(): React.JSX.Element {
   const { data: session, status } = useSession();
   const accessToken = session?.user?.accessToken;
 
-  const { data: chartData = defaultChartData } = useQuery({
+  const { data: chartData = defaultChartData, isLoading } = useQuery({
     queryKey: ["dashboard-charts", "weekly-earnings"],
     enabled: status === "authenticated",
     queryFn: async () => {
@@ -70,6 +71,28 @@ export default function EarningOverview(): React.JSX.Element {
       return response.data.weeklyEarnings.weeklyData;
     },
   });
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="h-full w-full rounded-[16px] bg-white p-6 font-sans text-[#1E2B4B] shadow-[0px_0px_10px_0px_#0000001A]">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <Skeleton className="h-6 w-44" />
+            <Skeleton className="mt-3 h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-28 rounded-xl" />
+        </div>
+        <div className="flex h-[240px] w-full items-end gap-4 px-2 pb-6">
+          {[48, 92, 66, 132, 104, 156, 118].map((height, index) => (
+            <div key={index} className="flex flex-1 flex-col items-center gap-3">
+              <Skeleton className="w-full rounded-t-xl" style={{ height }} />
+              <Skeleton className="h-3 w-8" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full bg-white p-6 rounded-[16px] shadow-[0px_0px_10px_0px_#0000001A] font-sans text-[#1E2B4B]">

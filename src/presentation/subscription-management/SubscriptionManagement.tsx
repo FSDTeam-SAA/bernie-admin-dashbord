@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Plan {
   _id: string;
@@ -436,14 +437,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
 
           <TableBody className="divide-y divide-slate-100">
             {shouldShowSkeleton ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="py-12 text-center font-medium text-slate-400"
-                >
-                  Loading subscriptions...
-                </TableCell>
-              </TableRow>
+              <SubscriptionTableSkeleton />
             ) : visiblePlans.length > 0 ? (
               visiblePlans.map((plan) => (
                 <TableRow
@@ -683,9 +677,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
           </DialogHeader>
 
           {singlePlanQuery.isLoading ? (
-            <p className="py-8 text-center text-sm font-medium text-slate-400">
-              Loading subscription details...
-            </p>
+            <DetailSkeleton />
           ) : selectedPlan ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <DetailItem label="Plan Name" value={selectedPlan.planName} />
@@ -760,6 +752,45 @@ export default function SubscriptionManagement(): React.JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function SubscriptionTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, rowIndex) => (
+        <TableRow key={rowIndex} className="border-slate-100">
+          {Array.from({ length: 7 }).map((__, cellIndex) => (
+            <TableCell key={cellIndex} className="px-6 py-5">
+              <Skeleton
+                className={`mx-auto h-4 ${
+                  cellIndex === 0
+                    ? "w-32"
+                    : cellIndex === 5
+                      ? "h-8 w-24 rounded-md"
+                      : cellIndex === 6
+                        ? "h-9 w-28 rounded-lg"
+                        : "w-24"
+                }`}
+              />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <Skeleton
+          key={index}
+          className={`h-20 rounded-lg ${index > 5 ? "sm:col-span-2" : ""}`}
+        />
+      ))}
     </div>
   );
 }

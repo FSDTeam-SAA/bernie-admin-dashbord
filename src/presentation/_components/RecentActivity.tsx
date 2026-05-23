@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -47,7 +48,7 @@ export default function RecentActivity(): React.JSX.Element {
   const { data: session, status } = useSession();
   const accessToken = session?.user?.accessToken;
 
-  const { data: tableData = [] } = useQuery({
+  const { data: tableData = [], isLoading } = useQuery({
     queryKey: ["recent-transactions"],
     enabled: status === "authenticated",
     queryFn: async () => {
@@ -76,6 +77,8 @@ export default function RecentActivity(): React.JSX.Element {
       }));
     },
   });
+
+  const shouldShowSkeleton = status === "loading" || isLoading;
 
   return (
     <div className="mt-6 w-full rounded-[16px] bg-white font-sans text-[#1E2B4B]">
@@ -107,27 +110,44 @@ export default function RecentActivity(): React.JSX.Element {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tableData.map((row, index) => (
-              <TableRow
-                key={index}
-                className="border-slate-100 transition hover:bg-slate-50"
-              >
-                <TableCell className="px-6 py-5 text-center">
-                  <span className="mx-auto inline-flex h-9 min-w-14 items-center justify-center rounded-xl bg-[#EBF5FF] px-3 text-sm font-extrabold text-[#0052B4]">
-                    {row.token}
-                  </span>
-                </TableCell>
-                <TableCell className="px-6 py-5 text-center text-base font-bold text-slate-950">
-                  {row.totalAmount}
-                </TableCell>
-                <TableCell className="px-6 py-5 text-center font-medium text-slate-600">
-                  {row.date}
-                </TableCell>
-                <TableCell className="px-6 py-5 text-center font-mono font-semibold tracking-wider text-slate-700">
-                  {row.registration}
-                </TableCell>
-              </TableRow>
-            ))}
+            {shouldShowSkeleton
+              ? Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index} className="border-slate-100">
+                    <TableCell className="px-6 py-5">
+                      <Skeleton className="mx-auto h-9 w-20 rounded-xl" />
+                    </TableCell>
+                    <TableCell className="px-6 py-5">
+                      <Skeleton className="mx-auto h-5 w-20" />
+                    </TableCell>
+                    <TableCell className="px-6 py-5">
+                      <Skeleton className="mx-auto h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="px-6 py-5">
+                      <Skeleton className="mx-auto h-5 w-40" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              : tableData.map((row, index) => (
+                  <TableRow
+                    key={index}
+                    className="border-slate-100 transition hover:bg-slate-50"
+                  >
+                    <TableCell className="px-6 py-5 text-center">
+                      <span className="mx-auto inline-flex h-9 min-w-14 items-center justify-center rounded-xl bg-[#EBF5FF] px-3 text-sm font-extrabold text-[#0052B4]">
+                        {row.token}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-5 text-center text-base font-bold text-slate-950">
+                      {row.totalAmount}
+                    </TableCell>
+                    <TableCell className="px-6 py-5 text-center font-medium text-slate-600">
+                      {row.date}
+                    </TableCell>
+                    <TableCell className="px-6 py-5 text-center font-mono font-semibold tracking-wider text-slate-700">
+                      {row.registration}
+                    </TableCell>
+                  </TableRow>
+                ))}
           </TableBody>
         </Table>
       </div>

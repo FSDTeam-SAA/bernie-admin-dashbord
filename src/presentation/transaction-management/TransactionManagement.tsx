@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 
@@ -289,14 +290,7 @@ export default function TransactionManagement(): React.JSX.Element {
 
           <TableBody className="divide-y divide-slate-100">
             {shouldShowSkeleton ? (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-12 text-slate-400 font-medium"
-                >
-                  Loading transactions...
-                </TableCell>
-              </TableRow>
+              <TransactionTableSkeleton />
             ) : visibleTransactions.length > 0 ? (
               visibleTransactions.map((transaction) => (
                 <TableRow
@@ -416,9 +410,7 @@ export default function TransactionManagement(): React.JSX.Element {
           </DialogHeader>
 
           {isSingleTransactionLoading ? (
-            <p className="py-8 text-center text-sm font-medium text-slate-400">
-              Loading transaction details...
-            </p>
+            <DetailSkeleton />
           ) : selectedTransaction ? (
             <div className="space-y-5">
               <div className="grid gap-3 rounded-lg bg-slate-50 p-4 sm:grid-cols-2">
@@ -506,6 +498,49 @@ export default function TransactionManagement(): React.JSX.Element {
           ) : null}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function TransactionTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, rowIndex) => (
+        <TableRow key={rowIndex} className="border-slate-100">
+          {Array.from({ length: 8 }).map((__, cellIndex) => (
+            <TableCell key={cellIndex} className="px-6 py-5">
+              <Skeleton
+                className={`mx-auto h-4 ${
+                  cellIndex === 1
+                    ? "w-44"
+                    : cellIndex === 2
+                      ? "w-32"
+                      : cellIndex === 7
+                        ? "h-9 w-9 rounded-lg"
+                        : "w-24"
+                }`}
+              />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 rounded-lg bg-slate-50 p-4 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-16 rounded-lg bg-slate-200" />
+        ))}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {Array.from({ length: 10 }).map((_, index) => (
+          <Skeleton key={index} className="h-20 rounded-lg" />
+        ))}
+      </div>
     </div>
   );
 }

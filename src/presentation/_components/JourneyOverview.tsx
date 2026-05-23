@@ -2,6 +2,7 @@
 import React from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -86,7 +87,7 @@ export default function JourneyOverview(): React.JSX.Element {
   const { data: session, status } = useSession();
   const accessToken = session?.user?.accessToken;
 
-  const { data: chartData = defaultChartData } = useQuery<JourneyChartItem[]>({
+  const { data: chartData = defaultChartData, isLoading } = useQuery<JourneyChartItem[]>({
     queryKey: ["dashboard-charts", "category-stats"],
     enabled: status === "authenticated",
     queryFn: async () => {
@@ -125,6 +126,31 @@ export default function JourneyOverview(): React.JSX.Element {
       });
     },
   });
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="flex h-full w-full flex-col rounded-[16px] bg-white p-6 font-sans text-[#1E2B4B] shadow-[0px_0px_10px_0px_#0000001A]">
+        <div className="mb-8 flex items-center justify-between">
+          <Skeleton className="h-6 w-44" />
+          <Skeleton className="h-4 w-14" />
+        </div>
+        <div className="flex flex-1 items-center justify-between gap-4">
+          <Skeleton className="h-[140px] w-[140px] rounded-full" />
+          <div className="flex w-52 flex-col gap-3.5">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Skeleton className="h-3 w-3 rounded-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <Skeleton className="h-4 w-14" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col bg-white p-6 rounded-[16px] shadow-[0px_0px_10px_0px_#0000001A] font-sans text-[#1E2B4B]">
