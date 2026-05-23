@@ -278,7 +278,7 @@ export default function TokenManagement(): React.JSX.Element {
       <div className="flex flex-wrap items-center justify-center gap-4 py-6">
         <div className="flex min-h-12 w-full max-w-md items-center gap-3 rounded-xl bg-[#0052B4] px-4 py-2.5 shadow-[0px_8px_20px_0px_#0052B433] sm:w-auto sm:min-w-[390px]">
           <Select value={selectedTokenId} onValueChange={setSelectedTokenId}>
-            <SelectTrigger className="h-10 flex-1 border-0 bg-transparent px-0 text-sm font-bold text-white shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:text-white">
+            <SelectTrigger className="h-10 flex-1 border-0 bg-transparent px-0 text-sm font-bold text-white shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:text-white cursor-pointer">
               <SelectValue placeholder="Select Winner Manually" />
             </SelectTrigger>
             <SelectContent>
@@ -305,7 +305,7 @@ export default function TokenManagement(): React.JSX.Element {
               manualWinnerMutation.isPending
             }
             onClick={() => manualWinnerMutation.mutate(selectedTokenId)}
-            className="h-9 rounded-lg bg-white px-4 text-xs font-extrabold text-[#0052B4] transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50"
+            className="h-9 rounded-lg bg-white px-4 text-xs font-extrabold text-[#0052B4] transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
           >
             Select
           </button>
@@ -315,7 +315,7 @@ export default function TokenManagement(): React.JSX.Element {
           type="button"
           disabled={randomWinnerMutation.isPending}
           onClick={() => randomWinnerMutation.mutate()}
-          className="flex min-h-12 items-center justify-between gap-3 rounded-xl border-2 border-[#0052B4] bg-white px-6 py-3 text-sm font-extrabold text-[#0052B4] shadow-sm transition-all hover:bg-blue-50/70 disabled:pointer-events-none disabled:opacity-60"
+          className="flex min-h-12 items-center justify-between gap-3 cursor-pointer rounded-xl border-2 border-[#0052B4] bg-white px-6 py-3 text-sm font-extrabold text-[#0052B4] shadow-sm transition-all hover:bg-blue-50/70 disabled:pointer-events-none disabled:opacity-60"
         >
           {randomWinnerMutation.isPending
             ? "Choosing..."

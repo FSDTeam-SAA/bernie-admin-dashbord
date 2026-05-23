@@ -220,6 +220,7 @@ export default function TransactionManagement(): React.JSX.Element {
   );
   const shouldShowSkeleton =
     isLoading || (isFetching && transactions.length === 0);
+  const shouldShowPagination = totalData > rowsPerPage;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -329,7 +330,7 @@ export default function TransactionManagement(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={() => setSelectedTransactionId(transaction._id)}
-                      className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
+                      className="mx-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
                       aria-label="View transaction details"
                     >
                       <Eye className="h-4 w-4" />
@@ -352,53 +353,55 @@ export default function TransactionManagement(): React.JSX.Element {
       </div>
 
       {/* Pagination Block Footer */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 text-sm text-slate-400 font-medium">
-        <div>
-          Showing {showingStart} to {showingEnd} of {totalData} results
+      {shouldShowPagination && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 text-sm text-slate-400 font-medium">
+          <div>
+            Showing {showingStart} to {showingEnd} of {totalData} results
+          </div>
+
+          <div className="flex items-center gap-1.5 select-none">
+            {/* Previous Page Button */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Clean, Dynamic Page Number Generator */}
+            {Array.from({ length: totalPages }, (_, i) => {
+              const pageNumber = i + 1;
+              const isActive = currentPage === pageNumber;
+
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded border font-semibold transition ${
+                    isActive
+                      ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            {/* Next Page Button */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-1.5 select-none">
-          {/* Previous Page Button */}
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Clean, Dynamic Page Number Generator */}
-          {Array.from({ length: totalPages }, (_, i) => {
-            const pageNumber = i + 1;
-            const isActive = currentPage === pageNumber;
-
-            return (
-              <button
-                key={pageNumber}
-                onClick={() => setCurrentPage(pageNumber)}
-                className={`flex h-10 w-10 items-center justify-center rounded border font-semibold transition ${
-                  isActive
-                    ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-
-          {/* Next Page Button */}
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
       <Dialog
         open={Boolean(selectedTransactionId)}

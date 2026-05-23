@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 interface ActivityData {
   token: string;
@@ -37,7 +38,9 @@ interface TransactionsResponse {
 }
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat("en-GB").format(new Date(date)).replaceAll("/", "-");
+  return new Intl.DateTimeFormat("en-GB")
+    .format(new Date(date))
+    .replaceAll("/", "-");
 }
 
 export default function RecentActivity(): React.JSX.Element {
@@ -48,13 +51,16 @@ export default function RecentActivity(): React.JSX.Element {
     queryKey: ["recent-transactions"],
     enabled: status === "authenticated",
     queryFn: async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/transactions?limit=5`, {
-        headers: accessToken
-          ? {
-              Authorization: `Bearer ${accessToken}`,
-            }
-          : undefined,
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/transactions?limit=5`,
+        {
+          headers: accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : undefined,
+        },
+      );
 
       const response = (await res.json()) as TransactionsResponse;
 
@@ -75,9 +81,11 @@ export default function RecentActivity(): React.JSX.Element {
     <div className="mt-6 w-full rounded-[16px] bg-white font-sans text-[#1E2B4B]">
       <div className="mb-6 flex items-center justify-between gap-4">
         <h2 className="text-xl font-bold tracking-tight">Recent Activity</h2>
-        <button className="text-sm font-medium text-slate-500 transition hover:text-slate-800 mt-6">
-          View All
-        </button>
+        <Link href="/transaction-management" className="ml-auto">
+          <button className="text-sm font-medium cursor-pointer text-slate-500 transition hover:text-slate-800 mt-6">
+            View All
+          </button>
+        </Link>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-100">

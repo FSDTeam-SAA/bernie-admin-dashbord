@@ -275,6 +275,7 @@ export default function InsuranceListing(): React.JSX.Element {
   const showingStart =
     totalData === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
   const showingEnd = Math.min(showingStart + insurances.length - 1, totalData);
+  const shouldShowPagination = totalData > rowsPerPage;
   const selectedInsurance = singleInsuranceQuery.data?.data;
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
@@ -353,7 +354,7 @@ export default function InsuranceListing(): React.JSX.Element {
           <button
             type="button"
             onClick={openAddDialog}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#0052B4] px-5 text-sm font-bold text-white transition hover:bg-[#00418F]"
+            className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#0052B4] px-5 text-sm font-bold text-white transition hover:bg-[#00418F]"
           >
             <Plus className="h-4 w-4" />
             Add Insurance
@@ -396,7 +397,7 @@ export default function InsuranceListing(): React.JSX.Element {
                           type="button"
                           disabled={updateMutation.isPending}
                           onClick={() => updateStatus(item)}
-                          className={`rounded-md px-3 py-1 text-xs font-bold transition disabled:pointer-events-none disabled:opacity-60 ${
+                          className={`cursor-pointer rounded-md px-3 py-1 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                             item.isActive
                               ? "bg-[#E6F7ED] text-[#22C55E]"
                               : "bg-slate-100 text-slate-500"
@@ -445,7 +446,7 @@ export default function InsuranceListing(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setViewInsuranceId(item._id)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#f1f5f9] py-3 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#f1f5f9] py-3 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
                       >
                         <Eye className="h-4 w-4" />
                         View
@@ -453,7 +454,7 @@ export default function InsuranceListing(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => openEditDialog(item)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0052cc] py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#0052cc] py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
                       >
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -461,7 +462,7 @@ export default function InsuranceListing(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(item)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#f1f3f5] py-3 text-xs font-semibold text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-500"
+                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#f1f3f5] py-3 text-xs font-semibold text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-500"
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete
@@ -474,7 +475,7 @@ export default function InsuranceListing(): React.JSX.Element {
           </div>
         )}
 
-        {!insurancesQuery.isLoading && !insurancesQuery.isError ? (
+        {!insurancesQuery.isLoading && !insurancesQuery.isError && shouldShowPagination ? (
           <div className="flex flex-col items-center justify-between gap-4 pt-4 text-sm font-medium text-slate-400 sm:flex-row">
             <div>
               Showing {showingStart}-{showingEnd} of {totalData} results
@@ -485,7 +486,7 @@ export default function InsuranceListing(): React.JSX.Element {
                 type="button"
                 disabled={currentPage <= 1 || insurancesQuery.isFetching}
                 onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-                className="rounded-lg border border-slate-200 bg-white p-2 text-slate-400 transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-slate-200 bg-white p-2 text-slate-400 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -502,7 +503,7 @@ export default function InsuranceListing(): React.JSX.Element {
                 onClick={() =>
                   setCurrentPage((page) => Math.min(page + 1, totalPages))
                 }
-                className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -578,6 +579,7 @@ export default function InsuranceListing(): React.JSX.Element {
               type="button"
               variant="outline"
               onClick={() => setViewInsuranceId(null)}
+              className="cursor-pointer"
             >
               Close
             </Button>
@@ -608,6 +610,7 @@ export default function InsuranceListing(): React.JSX.Element {
               type="button"
               variant="outline"
               onClick={() => setDeleteTarget(null)}
+              className="cursor-pointer"
             >
               Cancel
             </Button>
@@ -618,6 +621,7 @@ export default function InsuranceListing(): React.JSX.Element {
               onClick={() =>
                 deleteTarget && deleteMutation.mutate(deleteTarget._id)
               }
+              className="cursor-pointer disabled:cursor-not-allowed"
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
@@ -741,10 +745,15 @@ function InsuranceFormDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="cursor-pointer"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="cursor-pointer disabled:cursor-not-allowed"
+            >
               {isSubmitting ? "Saving..." : submitLabel}
             </Button>
           </DialogFooter>

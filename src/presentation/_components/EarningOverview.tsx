@@ -82,7 +82,7 @@ export default function EarningOverview(): React.JSX.Element {
           </p>
         </div>
         <Select defaultValue="weekly">
-          <SelectTrigger className="h-10 rounded-xl border-0 bg-slate-100 px-4 text-slate-700 shadow-none hover:bg-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0">
+          <SelectTrigger className="h-10 cursor-pointer rounded-xl border-0 bg-slate-100 px-4 text-slate-700 shadow-none hover:bg-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0">
             <SelectValue placeholder="Select range" />
           </SelectTrigger>
           <SelectContent>

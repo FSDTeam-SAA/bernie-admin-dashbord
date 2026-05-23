@@ -105,7 +105,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 space-y-2 flex flex-col items-stretch px-4 overflow-y-auto">
+        <nav className="flex-1 space-y-1 flex flex-col items-stretch px-4 overflow-y-auto">
           {navigation.map((item) => {
             const isActive =
               pathname === item.href ||

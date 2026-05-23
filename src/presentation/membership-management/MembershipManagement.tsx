@@ -290,6 +290,7 @@ export default function MembershipManagement(): React.JSX.Element {
   const shouldShowSkeleton =
     membershipsQuery.isLoading ||
     (membershipsQuery.isFetching && memberships.length === 0);
+  const shouldShowPagination = totalData > rowsPerPage;
 
   const updateMembershipStatus = (
     membership: Membership,
@@ -321,12 +322,16 @@ export default function MembershipManagement(): React.JSX.Element {
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="!h-12 w-full rounded-lg border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-none focus:ring-2 focus:ring-blue-500/20 sm:w-44">
+          <SelectTrigger className="!h-12 w-full cursor-pointer rounded-lg border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-none focus:ring-2 focus:ring-blue-500/20 sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent align="end">
             {statusFilterOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                className="cursor-pointer"
+              >
                 {option.label}
               </SelectItem>
             ))}
@@ -403,7 +408,7 @@ export default function MembershipManagement(): React.JSX.Element {
                       }
                     >
                       <SelectTrigger
-                        className={`mx-auto h-8 min-w-28 rounded-md border-0 px-3 text-xs font-bold uppercase shadow-none focus:ring-0 focus:ring-offset-0 ${getStatusClassName(
+                        className={`mx-auto h-8 min-w-28 cursor-pointer rounded-md border-0 px-3 text-xs font-bold uppercase shadow-none focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed ${getStatusClassName(
                           membership.status,
                         )}`}
                       >
@@ -411,7 +416,11 @@ export default function MembershipManagement(): React.JSX.Element {
                       </SelectTrigger>
                       <SelectContent align="center">
                         {statusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            className="cursor-pointer"
+                          >
                             {option.label}
                           </SelectItem>
                         ))}
@@ -422,7 +431,7 @@ export default function MembershipManagement(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={() => setViewMembershipId(membership._id)}
-                      className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
+                      className="mx-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
                       aria-label="View membership details"
                     >
                       <Eye className="h-4 w-4" />
@@ -444,53 +453,55 @@ export default function MembershipManagement(): React.JSX.Element {
         </Table>
       </div>
 
-      <div className="flex flex-col items-center justify-between gap-4 pt-6 text-sm font-medium text-slate-400 sm:flex-row">
-        <div>
-          Showing {showingStart} to {showingEnd} of {totalData} results
+      {shouldShowPagination && (
+        <div className="flex flex-col items-center justify-between gap-4 pt-6 text-sm font-medium text-slate-400 sm:flex-row">
+          <div>
+            Showing {showingStart} to {showingEnd} of {totalData} results
+          </div>
+
+          <div className="flex select-none items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => {
+              const pageNumber = i + 1;
+              const isActive = currentPage === pageNumber;
+
+              return (
+                <button
+                  type="button"
+                  key={pageNumber}
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded border font-semibold transition ${
+                    isActive
+                      ? "border-[#0F172A] bg-[#0F172A] text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-
-        <div className="flex select-none items-center gap-1.5">
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => {
-            const pageNumber = i + 1;
-            const isActive = currentPage === pageNumber;
-
-            return (
-              <button
-                type="button"
-                key={pageNumber}
-                onClick={() => setCurrentPage(pageNumber)}
-                className={`flex h-10 w-10 items-center justify-center rounded border font-semibold transition ${
-                  isActive
-                    ? "border-[#0F172A] bg-[#0F172A] text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-
-          <button
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
       <Dialog
         open={Boolean(viewMembershipId)}

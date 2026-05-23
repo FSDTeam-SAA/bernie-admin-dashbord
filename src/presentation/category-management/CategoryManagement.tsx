@@ -423,7 +423,7 @@ export default function CategoryManagement(): React.JSX.Element {
                 !TOKEN
               }
               onClick={() => lateFeeMutation.mutate()}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0052B4] text-white hover:bg-blue-700 transition shadow-sm disabled:pointer-events-none disabled:opacity-60"
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0052B4] text-white hover:bg-blue-700 transition shadow-sm disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
             >
               <Pencil className="w-4 h-4 fill-white text-[#0052B4] stroke-2" />
             </button>
@@ -433,7 +433,7 @@ export default function CategoryManagement(): React.JSX.Element {
         <button
           type="button"
           onClick={openAddDialog}
-          className="flex items-center justify-center gap-2 bg-[#004EAF] hover:bg-blue-700 text-white font-semibold text-sm px-6 py-3.5 rounded shadow-md transition-all self-start md:self-end"
+          className="flex items-center justify-center gap-2 bg-[#004EAF] hover:bg-blue-700 text-white font-semibold text-sm px-6 py-3.5 rounded shadow-md transition-all self-start md:self-end cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           Add Catagory
@@ -510,7 +510,7 @@ export default function CategoryManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setViewCategoryId(category._id)}
-                        className="text-slate-600 hover:text-blue-600 transition"
+                        className="text-slate-600 hover:text-blue-600 transition cursor-pointer"
                         aria-label="View category details"
                       >
                         <Eye className="w-4 h-4" />
@@ -518,7 +518,7 @@ export default function CategoryManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(category)}
-                        className="text-slate-600 hover:text-red-500 transition"
+                        className="text-slate-600 hover:text-red-500 transition cursor-pointer"
                         aria-label="Delete category"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -526,7 +526,7 @@ export default function CategoryManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => openEditDialog(category)}
-                        className="text-slate-600 hover:text-green-600 transition"
+                        className="text-slate-600 hover:text-green-600 transition cursor-pointer"
                         aria-label="Edit category"
                       >
                         <Pencil className="w-4 h-4" />
@@ -560,7 +560,7 @@ export default function CategoryManagement(): React.JSX.Element {
               type="button"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+              className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -574,7 +574,7 @@ export default function CategoryManagement(): React.JSX.Element {
                   type="button"
                   key={pageNumber}
                   onClick={() => setCurrentPage(pageNumber)}
-                  className={`flex h-10 w-10 items-center justify-center rounded border font-semibold transition ${
+                  className={`flex h-10 w-10 items-center justify-center rounded border font-semibold transition cursor-pointer ${
                     isActive
                       ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm"
                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -591,7 +591,7 @@ export default function CategoryManagement(): React.JSX.Element {
               onClick={() =>
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
-              className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+              className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

@@ -314,7 +314,7 @@ export default function JourneyManagement(): React.JSX.Element {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="h-10 min-w-36 rounded-xl border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 focus:ring-0 focus:ring-offset-0">
+          <SelectTrigger className="h-10 min-w-36 cursor-pointer rounded-xl border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 focus:ring-0 focus:ring-offset-0">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent align="end">
@@ -389,7 +389,7 @@ export default function JourneyManagement(): React.JSX.Element {
                       }
                     >
                       <SelectTrigger
-                        className={`mx-auto h-8 min-w-28 rounded-md border-0 px-3 text-xs font-bold shadow-none focus:ring-0 focus:ring-offset-0 ${getStatusClassName(journey.journeyStatus)}`}
+                        className={`mx-auto h-8 min-w-28 cursor-pointer rounded-md border-0 px-3 text-xs font-bold shadow-none focus:ring-0 focus:ring-offset-0 ${getStatusClassName(journey.journeyStatus)}`}
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -407,7 +407,7 @@ export default function JourneyManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setSelectedJourney(journey)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
+                        className="flex h-9 w-9 items-center cursor-pointer justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
                         aria-label="View journey details"
                       >
                         <Eye className="h-4 w-4" />
@@ -415,7 +415,7 @@ export default function JourneyManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(journey)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-500"
+                        className="flex h-9 w-9 items-center justify-center cursor-pointer rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-500"
                         aria-label="Delete journey"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -449,7 +449,7 @@ export default function JourneyManagement(): React.JSX.Element {
             type="button"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -463,7 +463,7 @@ export default function JourneyManagement(): React.JSX.Element {
                 type="button"
                 key={pageNumber}
                 onClick={() => setCurrentPage(pageNumber)}
-                className={`flex h-10 w-10 items-center justify-center rounded border text-sm font-semibold transition ${
+                className={`flex h-10 w-10 items-center justify-center cursor-pointer rounded border text-sm font-semibold transition ${
                   isActive
                     ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -480,7 +480,7 @@ export default function JourneyManagement(): React.JSX.Element {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

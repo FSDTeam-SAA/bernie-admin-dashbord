@@ -179,7 +179,7 @@ export default function MembershipTable(): React.JSX.Element {
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-10 w-10 items-center justify-center cursor-pointer rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -191,7 +191,7 @@ export default function MembershipTable(): React.JSX.Element {
               <button
                 key={pageNumber}
                 onClick={() => setCurrentPage(pageNumber)}
-                className={`flex h-10 w-10 items-center justify-center rounded border font-semibold transition ${
+                className={`flex h-10 w-10 items-center justify-center rounded border font-semibold cursor-pointer transition ${
                   isActive
                     ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -207,7 +207,7 @@ export default function MembershipTable(): React.JSX.Element {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-10 w-10 items-center justify-center cursor-pointer rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

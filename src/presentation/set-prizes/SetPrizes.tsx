@@ -230,9 +230,9 @@ export default function SetPrizes(): React.JSX.Element {
 
   return (
     <div className="w-full">
-      {/* ৪. সার্চ বার এবং অ্যাড প্রাইজ বাটন সেকশন (হুবহু স্ক্রিনশটের লেআউট) */}
+
       <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-        {/* হালকা ব্যাকগ্রাউন্ডের ওয়াইড সার্চ বার */}
+       
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
@@ -244,19 +244,19 @@ export default function SetPrizes(): React.JSX.Element {
           />
         </div>
 
-        {/* ব্লু অ্যাড প্রাইজ বাটন */}
+       
         <button
           type="button"
           onClick={openAddDialog}
           disabled={!isAuthed}
-          className="flex items-center justify-center gap-2 bg-[#0052B4] hover:bg-blue-700 text-white font-semibold text-sm px-7 py-3.5 rounded shadow-sm transition-all w-full sm:w-auto shrink-0 disabled:pointer-events-none disabled:opacity-60"
+          className="flex items-center justify-center gap-2 cursor-pointer bg-[#0052B4] hover:bg-blue-700 text-white font-semibold text-sm px-7 py-3.5 rounded shadow-sm transition-all w-full sm:w-auto shrink-0 disabled:pointer-events-none disabled:opacity-60"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           Add Prizes
         </button>
       </div>
 
-      {/* ৫. প্রাইজ কার্ড গ্রিড সেকশন */}
+    
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 py-10">
         {prizesQuery.isLoading ? (
           <div className="col-span-full text-center py-12 text-slate-400 font-medium bg-white rounded-2xl border border-dashed border-slate-200">
@@ -280,7 +280,7 @@ export default function SetPrizes(): React.JSX.Element {
                   type="button"
                   disabled={!isAuthed || updatePrizeMutation.isPending}
                   onClick={() => togglePrizeStatus(prize)}
-                  className={`text-xs font-semibold px-6 py-2 tracking-wide select-none transition disabled:pointer-events-none disabled:opacity-60 ${
+                  className={`text-xs font-semibold px-6 py-2 cursor-pointer tracking-wide select-none transition disabled:pointer-events-none disabled:opacity-60 ${
                     prize.isActive
                       ? "bg-[#E6F7ED] text-[#22C55E]"
                       : "bg-[#E2E8F0] text-slate-500"
@@ -295,7 +295,7 @@ export default function SetPrizes(): React.JSX.Element {
                     type="button"
                     onClick={() => setDeleteTarget(prize)}
                     disabled={!isAuthed || prize.isActive}
-                    className="text-slate-700 hover:text-red-500 transition-colors p-1 disabled:pointer-events-none disabled:opacity-40"
+                    className="text-slate-700 hover:text-red-500 cursor-pointer transition-colors p-1 disabled:pointer-events-none disabled:opacity-40"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -303,7 +303,7 @@ export default function SetPrizes(): React.JSX.Element {
                     type="button"
                     onClick={() => openEditDialog(prize)}
                     disabled={!isAuthed}
-                    className="text-slate-700 hover:text-blue-600 transition-colors p-1 disabled:pointer-events-none disabled:opacity-40"
+                    className="text-slate-700 hover:text-blue-600 cursor-pointer transition-colors p-1 disabled:pointer-events-none disabled:opacity-40"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>

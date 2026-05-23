@@ -315,6 +315,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
   );
   const shouldShowSkeleton =
     plansQuery.isLoading || (plansQuery.isFetching && plans.length === 0);
+  const shouldShowPagination = totalData > rowsPerPage;
 
   const openAddDialog = () => {
     setEditingPlan(null);
@@ -394,7 +395,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
         <button
           type="button"
           onClick={openAddDialog}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#0052B4] px-5 text-sm font-bold text-white transition hover:bg-[#00418F]"
+          className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#0052B4] px-5 text-sm font-bold text-white transition hover:bg-[#00418F]"
         >
           <Plus className="h-4 w-4" />
           Add Subscription
@@ -471,7 +472,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
                       onValueChange={(value) => updateStatus(plan, value)}
                     >
                       <SelectTrigger
-                        className={`mx-auto h-8 min-w-24 rounded-md border-0 px-3 text-xs font-bold uppercase shadow-none focus:ring-0 focus:ring-offset-0 ${
+                        className={`mx-auto h-8 min-w-24 cursor-pointer rounded-md border-0 px-3 text-xs font-bold uppercase shadow-none focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed ${
                           plan.isActive
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-red-50 text-red-600"
@@ -480,8 +481,12 @@ export default function SubscriptionManagement(): React.JSX.Element {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent align="center">
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="active" className="cursor-pointer">
+                          Active
+                        </SelectItem>
+                        <SelectItem value="inactive" className="cursor-pointer">
+                          Inactive
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -490,7 +495,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setViewPlanId(plan._id)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
                         aria-label="View subscription details"
                       >
                         <Eye className="h-4 w-4" />
@@ -498,7 +503,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => openEditDialog(plan)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
                         aria-label="Edit subscription"
                       >
                         <Pencil className="h-4 w-4" />
@@ -506,7 +511,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(plan)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-500"
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-500"
                         aria-label="Delete subscription"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -529,53 +534,55 @@ export default function SubscriptionManagement(): React.JSX.Element {
         </Table>
       </div>
 
-      <div className="flex flex-col items-center justify-between gap-4 pt-6 text-sm font-medium text-slate-400 sm:flex-row">
-        <div>
-          Showing {showingStart} to {showingEnd} of {totalData} results
+      {shouldShowPagination && (
+        <div className="flex flex-col items-center justify-between gap-4 pt-6 text-sm font-medium text-slate-400 sm:flex-row">
+          <div>
+            Showing {showingStart} to {showingEnd} of {totalData} results
+          </div>
+
+          <div className="flex select-none items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => {
+              const pageNumber = i + 1;
+              const isActive = currentPage === pageNumber;
+
+              return (
+                <button
+                  type="button"
+                  key={pageNumber}
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded border font-semibold transition ${
+                    isActive
+                      ? "border-[#0F172A] bg-[#0F172A] text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-
-        <div className="flex select-none items-center gap-1.5">
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => {
-            const pageNumber = i + 1;
-            const isActive = currentPage === pageNumber;
-
-            return (
-              <button
-                type="button"
-                key={pageNumber}
-                onClick={() => setCurrentPage(pageNumber)}
-                className={`flex h-10 w-10 items-center justify-center rounded border font-semibold transition ${
-                  isActive
-                    ? "border-[#0F172A] bg-[#0F172A] text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-
-          <button
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
       <Dialog
         open={formOpen}
@@ -647,10 +654,15 @@ export default function SubscriptionManagement(): React.JSX.Element {
                 variant="outline"
                 onClick={closeFormDialog}
                 disabled={isSaving}
+                className="cursor-pointer disabled:cursor-not-allowed"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving}>
+              <Button
+                type="submit"
+                disabled={isSaving}
+                className="cursor-pointer disabled:cursor-not-allowed"
+              >
                 {isSaving ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
@@ -730,6 +742,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
               variant="outline"
               onClick={() => setDeleteTarget(null)}
               disabled={deletePlanMutation.isPending}
+              className="cursor-pointer disabled:cursor-not-allowed"
             >
               Cancel
             </Button>
@@ -740,6 +753,7 @@ export default function SubscriptionManagement(): React.JSX.Element {
                 deleteTarget && deletePlanMutation.mutate(deleteTarget._id)
               }
               disabled={deletePlanMutation.isPending}
+              className="cursor-pointer disabled:cursor-not-allowed"
             >
               {deletePlanMutation.isPending ? "Deleting..." : "Delete"}
             </Button>

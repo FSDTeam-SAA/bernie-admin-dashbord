@@ -5,6 +5,13 @@ import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UserAddress {
   country: string;
@@ -252,7 +259,7 @@ export default function Settings(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className={`flex-1 text-center py-2.5 text-sm font-semibold rounded-lg transition-all ${
+            className={`flex-1 cursor-pointer text-center py-2.5 text-sm font-semibold rounded-[12px] transition-all ${
               activeTab === "profile"
                 ? "bg-[#0052cc] text-white shadow-sm"
                 : "text-slate-500 hover:text-slate-800"
@@ -263,7 +270,7 @@ export default function Settings(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setActiveTab("security")}
-            className={`flex-1 text-center py-2.5 text-sm font-semibold rounded-lg transition-all ${
+            className={`flex-1 cursor-pointer text-center py-2.5 text-sm font-semibold rounded-[12px] transition-all ${
               activeTab === "security"
                 ? "bg-[#0052cc] text-white shadow-sm"
                 : "text-slate-500 hover:text-slate-800"
@@ -357,21 +364,30 @@ export default function Settings(): React.JSX.Element {
                     <label className="text-xs font-bold text-slate-500">
                       Gender
                     </label>
-                    <select
+                    <Select
                       value={profileData.gender}
-                      onChange={(event) =>
+                      onValueChange={(value) =>
                         setProfileData({
                           ...profileData,
-                          gender: event.target.value,
+                          gender: value,
                         })
                       }
-                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
                     >
-                      <option value="">Select gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
+                      <SelectTrigger className="w-full cursor-pointer px-4 py-3.5 bg-white border border-slate-200 rounded-[12px] text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all !h-12">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male" className="cursor-pointer">
+                          Male
+                        </SelectItem>
+                        <SelectItem value="female" className="cursor-pointer">
+                          Female
+                        </SelectItem>
+                        <SelectItem value="other" className="cursor-pointer">
+                          Other
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -403,7 +419,7 @@ export default function Settings(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-[12px] text-slate-400 transition-colors hover:text-slate-600"
                     >
                       {showOldPassword ? (
                         <EyeOff className="w-4 h-4" />
@@ -435,7 +451,7 @@ export default function Settings(): React.JSX.Element {
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-[12px] text-slate-400 transition-colors hover:text-slate-600"
                       >
                         {showNewPassword ? (
                           <EyeOff className="w-4 h-4" />
@@ -468,7 +484,7 @@ export default function Settings(): React.JSX.Element {
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-[12px] text-slate-400 transition-colors hover:text-slate-600"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="w-4 h-4" />
@@ -488,7 +504,7 @@ export default function Settings(): React.JSX.Element {
               type="button"
               onClick={handleDiscard}
               disabled={isSaving}
-              className="px-6 py-3 bg-white border border-red-200 hover:bg-red-50 text-red-500 font-medium text-xs rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-60"
+              className="cursor-pointer px-6 py-3 bg-white border border-red-200 hover:bg-red-50 text-red-500 font-medium text-xs rounded-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               Discard Changes
             </button>
@@ -498,7 +514,7 @@ export default function Settings(): React.JSX.Element {
               disabled={
                 isSaving || profileQuery.isLoading || profileQuery.isError
               }
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0052cc] hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 px-6 py-3 bg-[#0052cc] hover:bg-blue-700 text-white font-semibold text-xs rounded-[12px] shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {isSaving ? "Saving..." : "Save Changes"}
