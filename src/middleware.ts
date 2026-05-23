@@ -6,7 +6,7 @@ const authRoutes = [
   "/signin",
   "/signup",
   "/forgot-password",
-  "/verify-otp",
+  "/otp-verify",
   "/reset-password",
 ];
 

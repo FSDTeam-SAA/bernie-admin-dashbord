@@ -166,7 +166,7 @@ export default function SigninPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !rememberMe}
               className="w-full bg-[#004EAF] text-white font-semibold text-[15px] py-[14px] px-4 rounded-xl shadow-[0px_6px_16px_rgba(0,78,175,0.25)] hover:bg-[#004195] hover:shadow-[0px_8px_20px_rgba(0,78,175,0.35)] active:scale-[0.99] transition-all duration-200 cursor-pointer text-center mt-3 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading ? "Signing In..." : "Sign In"}
@@ -174,7 +174,7 @@ export default function SigninPage() {
           </form>
 
           {/* Footer */}
-          <p className="text-[13px] text-slate-500 mt-10 text-center tracking-normal">
+          {/* <p className="text-[13px] text-slate-500 mt-10 text-center tracking-normal">
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
@@ -182,7 +182,7 @@ export default function SigninPage() {
             >
               Register Here
             </Link>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

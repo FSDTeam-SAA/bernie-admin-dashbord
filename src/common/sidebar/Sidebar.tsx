@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
-  PackageOpen,
   Settings,
   ShieldX,
   StickyNote,
