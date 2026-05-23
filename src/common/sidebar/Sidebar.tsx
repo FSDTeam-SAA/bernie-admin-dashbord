@@ -4,11 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
+  ArrowRightLeft,
+  BadgeEuro,
+  Car,
+  CircleDollarSign,
+  CirclePlus,
   LayoutDashboard,
   Loader2,
   LogOut,
   PackageOpen,
+  Settings,
+  ShieldX,
+  StickyNote,
   TruckElectric,
+  UserPlus,
+  UsersRound,
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -28,52 +38,52 @@ const navigation = [
   {
     name: "User Management",
     href: "/user-management",
-    icon: PackageOpen,
+    icon: UsersRound,
   },
   {
     name: "Journey Management",
     href: "/journey-management",
-    icon: TruckElectric,
+    icon: Car,
   },
   {
-    name: "Catagory Management",
+    name: "Category Management",
     href: "/category-management",
-    icon: TruckElectric,
+    icon: CirclePlus,
   },
   {
     name: "Token Management",
     href: "/token-management",
-    icon: TruckElectric,
+    icon: ShieldX,
   },
   {
     name: "Set Prizes",
     href: "/set-prizes",
-    icon: TruckElectric,
+    icon: CircleDollarSign ,
   },
   {
     name: "Transaction Management",
     href: "/transaction-management",
-    icon: TruckElectric,
+    icon: ArrowRightLeft,
   },
   {
     name: "Subscription Management",
     href: "/subscription-management",
-    icon: TruckElectric,
+    icon: BadgeEuro,
   },
   {
     name: "Membership Management",
     href: "/membership-management",
-    icon: TruckElectric,
+    icon: UserPlus,
   },
   {
     name: "Insurance Listing",
     href: "/insurance-listing",
-    icon: TruckElectric,
+    icon: StickyNote ,
   },
   {
     name: "Settings",
     href: "/settings",
-    icon: TruckElectric,
+    icon: Settings ,
   },
 ];
 
