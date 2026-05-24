@@ -3,6 +3,43 @@
 import { NextAuthOptions } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { ALL_ACCESS_PERMISSION } from "./team-permissions";
+
+type TeamAdmin = {
+  _id: string;
+  email: string;
+  permissions?: string[];
+};
+
+const readJsonResponse = async <T,>(res: Response): Promise<T> => {
+  const text = await res.text();
+  return text ? JSON.parse(text) : ({} as T);
+};
+
+async function getTeamAdminForUser(email: string, accessToken: string) {
+  const url = new URL(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/team`);
+  url.searchParams.set("page", "1");
+  url.searchParams.set("limit", "20");
+  url.searchParams.set("search", email);
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+  const response = await readJsonResponse<{
+    data?: { admins?: TeamAdmin[] };
+  }>(res);
+
+  if (!res.ok) return null;
+
+  return (
+    response.data?.admins?.find(
+      (admin) => admin.email?.toLowerCase() === email.toLowerCase(),
+    ) || null
+  );
+}
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -59,7 +96,11 @@ export const authOptions: NextAuthOptions = {
           console.log("Backend login response:", response);
 
           // Check API success
-          if (!res.ok || !response?.success) {
+          if (
+            !res.ok ||
+            response?.success === false ||
+            response?.status === false
+          ) {
             throw new Error(response?.message || "Login failed");
           }
 
@@ -71,7 +112,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Role check
-          if (user.role !== "ADMIN") {
+          if (!["SUPER_ADMIN", "ADMIN"].includes(user.role)) {
             throw new Error("Only admins can access this page");
           }
 
@@ -82,6 +123,16 @@ export const authOptions: NextAuthOptions = {
           const refreshToken =
             user?.refreshToken || null;
 
+          const teamAdmin =
+            user.role === "ADMIN" && accessToken
+              ? await getTeamAdminForUser(user.email, accessToken)
+              : null;
+
+          const permissions =
+            user.role === "SUPER_ADMIN"
+              ? [ALL_ACCESS_PERMISSION]
+              : teamAdmin?.permissions || [];
+
           // Return user data
           return {
             id: user?._id,
@@ -89,6 +140,8 @@ export const authOptions: NextAuthOptions = {
             email: user?.email,
             phoneNumber: user?.phoneNumber || null,
             role: user?.role,
+            permissions,
+            teamAdminId: teamAdmin?._id || null,
             profileImage: user?.profileImage || null,
             accessToken,
             refreshToken,
@@ -122,6 +175,8 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.phoneNumber = user.phoneNumber;
         token.role = user.role;
+        token.permissions = user.permissions;
+        token.teamAdminId = user.teamAdminId;
         token.profileImage = user.profileImage;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
@@ -144,6 +199,8 @@ export const authOptions: NextAuthOptions = {
         email: token.email,
         phoneNumber: token.phoneNumber,
         role: token.role,
+        permissions: token.permissions,
+        teamAdminId: token.teamAdminId,
         profileImage: token.profileImage,
         accessToken: token.accessToken,
         refreshToken: token.refreshToken,

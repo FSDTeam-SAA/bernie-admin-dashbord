@@ -15,13 +15,12 @@ import {
   Settings,
   ShieldX,
   StickyNote,
-  TruckElectric,
   UserPlus,
   UsersRound,
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { canAccessPermission } from "@/lib/team-permissions";
 
 const navigation = [
   { name: "Dashboard Overview", href: "/", icon: LayoutDashboard },
@@ -80,6 +80,11 @@ const navigation = [
     icon: StickyNote ,
   },
   {
+    name: "Manage workers",
+    href: "/manage-workers",
+    icon: Settings ,
+  },
+  {
     name: "Settings",
     href: "/settings",
     icon: Settings ,
@@ -88,8 +93,18 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const role = session?.user?.role;
+  const permissions = session?.user?.permissions || [];
+  const visibleNavigation =
+    role === "SUPER_ADMIN"
+      ? navigation
+      : navigation.filter((item) =>
+          item.href !== "/manage-workers" &&
+          canAccessPermission(permissions, item.name),
+        );
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -115,7 +130,7 @@ export function Sidebar() {
 
         {/* Navigation Links */}
         <nav className="flex-1 space-y-1 flex flex-col items-stretch px-4 overflow-y-auto">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== "/" && pathname.startsWith(item.href));

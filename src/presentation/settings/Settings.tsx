@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Camera, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -103,6 +103,8 @@ export default function Settings(): React.JSX.Element {
     useState<ProfileFormState>(emptyProfileForm);
   const [passwordData, setPasswordData] =
     useState<PasswordFormState>(emptyPasswordForm);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState("");
 
   const queryClient = useQueryClient();
   const { data: session, status } = useSession();
@@ -144,6 +146,18 @@ export default function Settings(): React.JSX.Element {
       gender: userProfile.gender || "",
     });
   }, [userProfile]);
+
+  useEffect(() => {
+    if (!profileImageFile) {
+      setProfileImagePreview("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(profileImageFile);
+    setProfileImagePreview(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [profileImageFile]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (body: { name: string; gender?: string }) => {
@@ -193,7 +207,46 @@ export default function Settings(): React.JSX.Element {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const handleProfileSubmit = () => {
+  const uploadProfileImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("profileImage", file);
+
+      const res = await fetch(`${apiBaseUrl}/user/upload-avatar`, {
+        method: userProfile?.profileImage ? "PUT" : "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+      const response = await readJsonResponse<ProfileResponse>(res);
+
+      if (!res.ok || response.status === false || response.success === false) {
+        throw new Error(response.message || "Failed to upload profile image");
+      }
+
+      return response;
+    },
+    onSuccess: async () => {
+      toast.success("Profile image updated successfully");
+      setProfileImageFile(null);
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const handleProfileImageChange = (file?: File | null) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+
+    setProfileImageFile(file);
+  };
+
+  const handleProfileSubmit = async () => {
     const name = profileData.name.trim();
     const gender = profileData.gender.trim();
 
@@ -202,10 +255,18 @@ export default function Settings(): React.JSX.Element {
       return;
     }
 
-    updateProfileMutation.mutate({
-      name,
-      ...(gender ? { gender } : {}),
-    });
+    try {
+      await updateProfileMutation.mutateAsync({
+        name,
+        ...(gender ? { gender } : {}),
+      });
+
+      if (profileImageFile) {
+        await uploadProfileImageMutation.mutateAsync(profileImageFile);
+      }
+    } catch {
+      // Mutation callbacks already show the API error toast.
+    }
   };
 
   const handlePasswordSubmit = () => {
@@ -227,7 +288,7 @@ export default function Settings(): React.JSX.Element {
 
   const handleSave = () => {
     if (activeTab === "profile") {
-      handleProfileSubmit();
+      void handleProfileSubmit();
       return;
     }
 
@@ -241,6 +302,7 @@ export default function Settings(): React.JSX.Element {
         email: userProfile?.email || "",
         gender: userProfile?.gender || "",
       });
+      setProfileImageFile(null);
       return;
     }
 
@@ -248,10 +310,12 @@ export default function Settings(): React.JSX.Element {
   };
 
   const isSaving =
-    updateProfileMutation.isPending || changePasswordMutation.isPending;
+    updateProfileMutation.isPending ||
+    uploadProfileImageMutation.isPending ||
+    changePasswordMutation.isPending;
   const displayName = profileData.name || userProfile?.name || "User";
   const displayEmail = profileData.email || userProfile?.email || "";
-  const profileImage = userProfile?.profileImage || "";
+  const profileImage = profileImagePreview || userProfile?.profileImage || "";
 
   return (
     <div className="w-full min-h-screen font-sans antialiased text-[#1e293b]">
@@ -297,6 +361,20 @@ export default function Settings(): React.JSX.Element {
                 {getInitials(displayName)}
               </div>
             ) : null}
+            {activeTab === "profile" && !profileQuery.isLoading ? (
+              <label className="absolute inset-x-0 bottom-0 flex h-9 cursor-pointer items-center justify-center bg-slate-950/65 text-white transition hover:bg-slate-950/75">
+                <Camera className="h-4 w-4" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    handleProfileImageChange(event.target.files?.[0] || null);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            ) : null}
           </div>
 
           <div className="text-center space-y-3 mt-2">
@@ -335,6 +413,26 @@ export default function Settings(): React.JSX.Element {
               <h3 className="text-lg font-bold text-[#1a253c] tracking-tight">
                 Personal Information
               </h3>
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                <label className="mb-2 block text-xs font-bold text-slate-500">
+                  Profile Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    handleProfileImageChange(event.target.files?.[0] || null);
+                    event.target.value = "";
+                  }}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 file:mr-4 file:rounded file:border-0 file:bg-[#0052cc] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                />
+                {profileImageFile ? (
+                  <p className="mt-2 text-xs font-medium text-slate-500">
+                    Selected: {profileImageFile.name}
+                  </p>
+                ) : null}
+              </div>
 
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
