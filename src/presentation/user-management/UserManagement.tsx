@@ -102,7 +102,7 @@ export default function MembershipTable(): React.JSX.Element {
       </div>
 
       <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] mb-6">
-        Membership Details
+        Membership Detail
       </h1>
 
       {/* Table */}
