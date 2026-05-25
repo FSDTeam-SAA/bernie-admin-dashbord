@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Table,
@@ -14,39 +14,45 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 
-// Type for Membership data
-interface Membership {
+interface User {
   _id: string;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  planId: {
-    _id: string;
-    planName: string;
-    price: number;
-    billingCycle: string;
-  };
-  startDate: string;
-  endDate: string;
-  status: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  isVerified?: boolean;
 }
 
-export default function MembershipTable(): React.JSX.Element {
+interface UsersApiResponse {
+  data?: {
+    users?: User[];
+    paginationInfo?: {
+      currentPage: number;
+      totalPages: number;
+      totalData: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  };
+  message?: string;
+}
+
+export default function UserManagement(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const rowsPerPage = 10;
 
   const session = useSession();
   const TOKEN = session?.data?.user?.accessToken;
 
-  // Fetch memberships from API with server-side search
-  const { data, refetch, isLoading } = useQuery({
-    queryKey: ["memberships", searchQuery],
+  const { data, isLoading } = useQuery<UsersApiResponse>({
+    queryKey: ["users", searchQuery, currentPage],
+    enabled: Boolean(TOKEN),
     queryFn: async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/memberships/all?search=${encodeURIComponent(searchQuery)}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/all-users?search=${encodeURIComponent(
+          searchQuery,
+        )}&page=${currentPage}&limit=${rowsPerPage}`,
         {
           headers: {
             Authorization: `Bearer ${TOKEN}`,
@@ -55,37 +61,25 @@ export default function MembershipTable(): React.JSX.Element {
         },
       );
 
-      if (!res.ok) throw new Error("Failed to fetch memberships");
+      if (!res.ok) {
+        throw new Error("Failed to fetch users");
+      }
+
       return res.json();
     },
   });
 
-  // Extract memberships array safely
-  const memberships: Membership[] = data?.data?.memberships || [];
+  const users: User[] = data?.data?.users || [];
+  const paginationInfo = data?.data?.paginationInfo;
+  const totalPages = paginationInfo?.totalPages || 1;
+  const totalData = paginationInfo?.totalData || users.length;
+  const showingStart = totalData === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const showingEnd = Math.min(currentPage * rowsPerPage, totalData);
 
-  // Pagination
-  const totalPages = Math.max(Math.ceil(memberships.length / rowsPerPage), 1);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedMemberships = memberships.slice(
-    startIndex,
-    startIndex + rowsPerPage,
-  );
-  const showingStart = memberships.length === 0 ? 0 : startIndex + 1;
-  const showingEnd = Math.min(
-    startIndex + paginatedMemberships.length,
-    memberships.length,
-  );
-
-  // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
   };
-
-  // Refetch data whenever searchQuery changes
-  useEffect(() => {
-    refetch();
-  }, [searchQuery]);
 
   return (
     <div className="w-full text-[#1E2B4B]">
@@ -102,7 +96,7 @@ export default function MembershipTable(): React.JSX.Element {
       </div>
 
       <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] mb-6">
-        Membership Details
+        User Details
       </h1>
 
       {/* Table */}
@@ -117,45 +111,50 @@ export default function MembershipTable(): React.JSX.Element {
                 Email
               </TableHead>
               <TableHead className="font-semibold text-slate-700 text-center h-12 px-6">
-                Plan
+                Phone
               </TableHead>
               <TableHead className="font-semibold text-slate-700 text-center h-12 px-6">
-                Status
+                Role
               </TableHead>
+              {/* <TableHead className="font-semibold text-slate-700 text-center h-12 px-6">
+                Verified
+              </TableHead> */}
             </TableRow>
           </TableHeader>
 
           <TableBody className="divide-y divide-slate-100">
             {isLoading ? (
               <UserTableSkeleton />
-            ) : paginatedMemberships.length > 0 ? (
-              paginatedMemberships.map((m) => (
+            ) : users.length > 0 ? (
+              users.map((user) => (
                 <TableRow
-                  key={m._id}
+                  key={user._id}
                   className="hover:bg-slate-50/80 border-slate-100 transition-colors"
                 >
                   <TableCell className="px-6 py-5 font-bold text-slate-900 text-center">
-                    {m.userId.name}
+                    {user.name}
                   </TableCell>
                   <TableCell className="px-6 py-5 font-normal text-slate-500 text-center">
-                    {m.userId.email}
+                    {user.email}
+                  </TableCell>
+                  <TableCell className="px-6 py-5 font-normal text-slate-500 text-center">
+                    {user.phone || "-"}
                   </TableCell>
                   <TableCell className="px-6 py-5 font-medium text-slate-600 text-center">
-                    {m.planId.planName} (${m.planId.price} /{" "}
-                    {m.planId.billingCycle})
+                    {user.role}
                   </TableCell>
-                  <TableCell className="px-6 py-5 font-medium text-slate-600 text-center">
-                    {m.status}
-                  </TableCell>
+                  {/* <TableCell className="px-6 py-5 font-medium text-slate-600 text-center">
+                    {user.isVerified ? "Yes" : "No"}
+                  </TableCell> */}
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center py-12 text-slate-400 font-medium"
                 >
-                  No matching membership found.
+                  No matching users found.
                 </TableCell>
               </TableRow>
             )}
@@ -166,7 +165,7 @@ export default function MembershipTable(): React.JSX.Element {
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 text-sm text-slate-400 font-medium">
         <div>
-          Showing {showingStart} to {showingEnd} of {memberships.length} results
+          Showing {showingStart} to {showingEnd} of {totalData} results
         </div>
 
         <div className="flex items-center gap-1.5 select-none">
@@ -216,7 +215,7 @@ function UserTableSkeleton() {
     <>
       {Array.from({ length: 5 }).map((_, rowIndex) => (
         <TableRow key={rowIndex} className="border-slate-100">
-          {Array.from({ length: 4 }).map((__, cellIndex) => (
+          {Array.from({ length: 5 }).map((__, cellIndex) => (
             <TableCell key={cellIndex} className="px-6 py-5">
               <Skeleton
                 className={`mx-auto h-4 ${

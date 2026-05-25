@@ -95,6 +95,13 @@ const emptyForm: PlanFormState = {
   packageIncludes: "",
 };
 
+const billingCycleOptions = [
+  { value: "weekly", label: "Weekly (+7 days)" },
+  { value: "fortnight", label: "Fortnight (+15 days)" },
+  { value: "monthly", label: "Monthly (+1 month)" },
+  { value: "yearly", label: "Yearly (+1 year)" },
+];
+
 const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
 const formatDate = (date?: string) => {
@@ -609,13 +616,32 @@ export default function SubscriptionManagement(): React.JSX.Element {
                   setForm((prev) => ({ ...prev, price: value }))
                 }
               />
-              <FormField
-                label="Billing Cycle"
-                value={form.billingCycle}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, billingCycle: value }))
-                }
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Billing Cycle
+                </label>
+                <Select
+                  value={form.billingCycle}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({ ...prev, billingCycle: value }))
+                  }
+                >
+                  <SelectTrigger className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-700 shadow-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                    <SelectValue placeholder="Select billing cycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {billingCycleOptions.map((option) => (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className="cursor-pointer"
+                      >
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <FormField
                 label="Title"
                 value={form.title}
