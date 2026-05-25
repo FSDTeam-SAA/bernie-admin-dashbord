@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Eye, Search, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -21,6 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Token {
   _id: string;
@@ -33,6 +40,7 @@ interface Token {
   quantity: number;
   totalPrice: number;
   paymentStatus: string;
+  ticketCodes: string[];
   stripeSessionId?: string;
   createdAt: string;
   updatedAt?: string;
@@ -112,6 +120,7 @@ export default function TokenManagement(): React.JSX.Element {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState("");
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
@@ -371,6 +380,9 @@ export default function TokenManagement(): React.JSX.Element {
               <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center">
                 Purchase Date
               </TableHead>
+              <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center">
+                Action
+              </TableHead>
             </TableRow>
           </TableHeader>
 
@@ -401,12 +413,22 @@ export default function TokenManagement(): React.JSX.Element {
                   <TableCell className="px-6 py-5 font-normal text-slate-500 text-center whitespace-nowrap">
                     {formatDate(token.createdAt)}
                   </TableCell>
+                  <TableCell className="px-6 py-5 text-center whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedToken(token)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                      aria-label={`View details for ${token.userId?.name || "token"}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="text-center py-12 text-slate-400 font-medium"
                 >
                   No matching token details found.
@@ -416,6 +438,84 @@ export default function TokenManagement(): React.JSX.Element {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog
+        open={Boolean(selectedToken)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedToken(null);
+        }}
+      >
+        <DialogContent className="!max-w-3xl w-full">
+          <DialogTitle>Token Details</DialogTitle>
+          <DialogDescription className="mb-4 text-sm text-slate-500">
+            {selectedToken
+              ? `Viewing ticket details for ${selectedToken.userId?.name || "N/A"}`
+              : "Select a token to view details."}
+          </DialogDescription>
+
+          {selectedToken ? (
+            <div className="space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-2xl bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Buyer
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">
+                    {selectedToken.userId?.name || "N/A"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {selectedToken.userId?.email || "N/A"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Vehicle
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">
+                    {selectedToken.vehicleNumber || "N/A"}
+                  </p>
+                  <p className="text-sm text-slate-500">Qty: {selectedToken.quantity}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Total Price
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">
+                    {formatMoney(selectedToken.totalPrice)}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Status: {selectedToken.paymentStatus}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Ticket Codes
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedToken.ticketCodes.length > 0 ? (
+                    selectedToken.ticketCodes.map((code) => (
+                      <span
+                        key={code}
+                        className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                      >
+                        {code}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">No ticket codes available.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* <DialogClose className="mt-6 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+            Close
+          </DialogClose> */}
+        </DialogContent>
+      </Dialog>
 
       {shouldShowPagination ? (
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 text-sm text-slate-400 font-medium">
@@ -490,7 +590,7 @@ function TokenTableSkeleton() {
     <>
       {Array.from({ length: 6 }).map((_, rowIndex) => (
         <TableRow key={rowIndex} className="border-slate-100">
-          {Array.from({ length: 6 }).map((__, cellIndex) => (
+          {Array.from({ length: 7 }).map((__, cellIndex) => (
             <TableCell key={cellIndex} className="px-6 py-5">
               <Skeleton
                 className={`mx-auto h-4 ${

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Search, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, ShieldCheck, UserPlus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -150,6 +150,14 @@ function Manageworkers() {
             className="w-full rounded-[16px] border-0 bg-[#F1F5F9] py-4 pl-14 pr-5 text-sm font-medium text-slate-700 transition-all placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
+
+        <Link
+          href="/manage-workers/add-workers"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052cc] px-5 text-sm font-semibold text-white transition hover:bg-[#0047b3] sm:w-auto"
+        >
+          <UserPlus className="h-4 w-4" />
+          Add Workers
+        </Link>
       </div>
 
       <h1 className="mb-6 mt-8 text-2xl font-bold tracking-tight text-[#0F172A]">

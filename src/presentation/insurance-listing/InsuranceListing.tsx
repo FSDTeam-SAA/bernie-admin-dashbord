@@ -34,6 +34,7 @@ interface InsuranceItem {
   savingUpTo: number;
   isActive: boolean;
   createdAt: string;
+  url: string;
   updatedAt: string;
   __v?: number;
 }
@@ -76,6 +77,7 @@ interface InsurancePayload {
   shortDetails: string;
   rate: number;
   savingUpTo: number;
+  url: string;
 }
 
 interface InsuranceFormState {
@@ -83,6 +85,7 @@ interface InsuranceFormState {
   shortDetails: string;
   rate: string;
   savingUpTo: string;
+  url: string;
 }
 
 const emptyForm: InsuranceFormState = {
@@ -90,6 +93,7 @@ const emptyForm: InsuranceFormState = {
   shortDetails: "",
   rate: "",
   savingUpTo: "",
+  url: "",
 };
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
@@ -105,6 +109,7 @@ const getInsurancePayload = (form: InsuranceFormState): InsurancePayload => ({
   shortDetails: form.shortDetails.trim(),
   rate: Number(form.rate),
   savingUpTo: Number(form.savingUpTo),
+  url: form.url.trim(),
 });
 
 const formatCurrency = (value: number) =>
@@ -292,6 +297,7 @@ export default function InsuranceListing(): React.JSX.Element {
       shortDetails: insurance.shortDetails,
       rate: String(insurance.rate),
       savingUpTo: String(insurance.savingUpTo),
+      url: insurance.url || "",
     });
     setFormOpen(true);
   };
@@ -559,6 +565,14 @@ export default function InsuranceListing(): React.JSX.Element {
                 label="Saving Up To"
                 value={`${selectedInsurance.savingUpTo}%`}
               />
+              <DetailRow 
+                label="URL" 
+                value={selectedInsurance.url ? (
+                  <a href={selectedInsurance.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    {selectedInsurance.url}
+                  </a>
+                ) : "N/A"} 
+              />
               <DetailRow
                 label="Status"
                 value={selectedInsurance.isActive ? "Active" : "Inactive"}
@@ -575,7 +589,6 @@ export default function InsuranceListing(): React.JSX.Element {
               type="button"
               variant="outline"
               onClick={() => setViewInsuranceId(null)}
-              className="cursor-pointer"
             >
               Close
             </Button>
@@ -714,12 +727,7 @@ function InsuranceFormDialog({
             <input
               type="text"
               value={form.name}
-              onChange={(event) =>
-                onFormChange((current) => ({
-                  ...current,
-                  name: event.target.value,
-                }))
-              }
+              onChange={(e) => onFormChange((c) => ({ ...c, name: e.target.value }))}
               placeholder="City-Premium Plan"
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
@@ -731,15 +739,24 @@ function InsuranceFormDialog({
             </label>
             <textarea
               value={form.shortDetails}
-              onChange={(event) =>
-                onFormChange((current) => ({
-                  ...current,
-                  shortDetails: event.target.value,
-                }))
-              }
+              onChange={(e) => onFormChange((c) => ({ ...c, shortDetails: e.target.value }))}
               placeholder="Comprehensive cover optimized for London Congestion Zone regular users."
               rows={4}
               className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* New URL Field */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-700">
+              URL <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={form.url}
+              onChange={(e) => onFormChange((c) => ({ ...c, url: e.target.value }))}
+              placeholder="https://example.com/insurance-policy"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -753,12 +770,7 @@ function InsuranceFormDialog({
                 min="0"
                 step="0.01"
                 value={form.rate}
-                onChange={(event) =>
-                  onFormChange((current) => ({
-                    ...current,
-                    rate: event.target.value,
-                  }))
-                }
+                onChange={(e) => onFormChange((c) => ({ ...c, rate: e.target.value }))}
                 placeholder="42.50"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -773,12 +785,7 @@ function InsuranceFormDialog({
                 min="0"
                 step="1"
                 value={form.savingUpTo}
-                onChange={(event) =>
-                  onFormChange((current) => ({
-                    ...current,
-                    savingUpTo: event.target.value,
-                  }))
-                }
+                onChange={(e) => onFormChange((c) => ({ ...c, savingUpTo: e.target.value }))}
                 placeholder="20"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -786,19 +793,10 @@ function InsuranceFormDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="cursor-pointer"
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="cursor-pointer disabled:cursor-not-allowed"
-            >
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : submitLabel}
             </Button>
           </DialogFooter>
@@ -808,13 +806,13 @@ function InsuranceFormDialog({
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: string | React.ReactNode }) {
   return (
     <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
         {label}
       </span>
-      <span className="font-medium text-slate-700">{value}</span>
+      <span className="font-medium text-slate-700 break-words">{value}</span>
     </div>
   );
 }

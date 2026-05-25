@@ -113,7 +113,7 @@ export function Sidebar() {
 
   return (
     <>
-      <div className="flex h-screen sticky top-0 bottom-0 w-[380px] flex-col bg-white z-50 shadow-[4px_0px_40px_0px_rgba(0,0,0,0.04)]">
+      <div className="flex h-screen sticky top-0 bottom-0 w-[400px] flex-col bg-white z-50 shadow-[4px_0px_40px_0px_rgba(0,0,0,0.04)]">
         {/* Logo Section - Perfectly Centered without borders */}
         <div className="h-[120px] flex items-center justify-center px-6">
           <div className="relative h-[60px] w-[190px] flex items-center justify-center">
