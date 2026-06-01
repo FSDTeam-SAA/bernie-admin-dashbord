@@ -5,6 +5,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Eye,
   Trash2,
   Pencil,
@@ -31,6 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Category {
   _id: string;
@@ -38,6 +40,8 @@ interface Category {
   shortDetails?: string;
   rateActual: number;
   rateDiscounted?: number;
+  returnPrice?: number;
+  subOptions?: string[] | string;
   icon?: string;
   isActive: boolean;
   createdAt?: string;
@@ -81,14 +85,25 @@ interface CategoryFormState {
   shortDetails: string;
   rateActual: string;
   rateDiscounted: string;
+  returnPrice: string;
+  subOptions: string[];
   icon: File | null;
 }
+
+type CategoryTextFormField = Exclude<
+  keyof CategoryFormState,
+  "subOptions" | "icon"
+>;
+
+const CATEGORY_SUB_OPTIONS = ["Blackwall", "Silvertown"] as const;
 
 const emptyForm: CategoryFormState = {
   name: "",
   shortDetails: "",
   rateActual: "",
   rateDiscounted: "",
+  returnPrice: "",
+  subOptions: [],
   icon: null,
 };
 
@@ -100,12 +115,67 @@ const readJsonResponse = async <T,>(res: Response): Promise<T> => {
 const formatMoney = (amount?: number) =>
   typeof amount === "number" ? `£${amount}` : "N/A";
 
+const getSupportedSubOption = (option: string) => {
+  const normalizedOption = option.trim().toLowerCase();
+
+  if (normalizedOption === "blackwall") {
+    return "Blackwall";
+  }
+
+  if (normalizedOption === "silvertown" || normalizedOption === "slivertown") {
+    return "Silvertown";
+  }
+
+  return null;
+};
+
+const parseSubOptions = (value: string) =>
+  value.split(/[,\n]/).map((option) => option.trim());
+
+const normalizeSubOptions = (value?: Category["subOptions"]) => {
+  let options: string[] = [];
+
+  if (Array.isArray(value)) {
+    options = value.map((option) => String(option));
+  } else {
+    const trimmedValue = value?.trim() || "";
+
+    if (!trimmedValue) {
+      return [];
+    }
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue);
+
+      if (Array.isArray(parsedValue)) {
+        options = parsedValue.map((option) => String(option));
+      } else {
+        options = parseSubOptions(trimmedValue);
+      }
+    } catch {
+      options = parseSubOptions(trimmedValue);
+    }
+  }
+
+  return CATEGORY_SUB_OPTIONS.filter((allowedOption) =>
+    options.some((option) => getSupportedSubOption(option) === allowedOption),
+  );
+};
+
+const formatSubOptionsDisplay = (subOptions?: Category["subOptions"]) =>
+  normalizeSubOptions(subOptions).join(", ") || "N/A";
+
+const buildSubOptionsPayload = (value: string[]) =>
+  JSON.stringify(normalizeSubOptions(value));
+
 const buildCategoryFormData = (form: CategoryFormState) => {
   const formData = new FormData();
   formData.append("name", form.name.trim());
   formData.append("shortDetails", form.shortDetails.trim());
   formData.append("rateActual", form.rateActual);
   formData.append("rateDiscounted", form.rateDiscounted);
+  formData.append("returnPrice", form.returnPrice);
+  formData.append("subOptions", buildSubOptionsPayload(form.subOptions));
 
   if (form.icon) {
     formData.append("icon", form.icon);
@@ -355,12 +425,21 @@ export default function CategoryManagement(): React.JSX.Element {
         typeof category.rateDiscounted === "number"
           ? String(category.rateDiscounted)
           : "",
+      returnPrice:
+        typeof category.returnPrice === "number"
+          ? String(category.returnPrice)
+          : "",
+      subOptions: normalizeSubOptions(category.subOptions),
       icon: null,
     });
   };
 
-  const updateFormField = (field: keyof CategoryFormState, value: string) => {
+  const updateFormField = (field: CategoryTextFormField, value: string) => {
     setCategoryForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateSubOptions = (subOptions: string[]) => {
+    setCategoryForm((prev) => ({ ...prev, subOptions }));
   };
 
   const updateFormIcon = (file: File | null) => {
@@ -388,6 +467,24 @@ export default function CategoryManagement(): React.JSX.Element {
       Number.isNaN(Number(categoryForm.rateDiscounted))
     ) {
       toast.error("Discounted charge must be a number");
+      return;
+    }
+
+    if (
+      !categoryForm.returnPrice ||
+      Number.isNaN(Number(categoryForm.returnPrice))
+    ) {
+      toast.error("Return price is required");
+      return;
+    }
+
+    const selectedSubOptionsCount = categoryForm.subOptions.length;
+    const hasPartialSubOptions =
+      selectedSubOptionsCount > 0 &&
+      selectedSubOptionsCount < CATEGORY_SUB_OPTIONS.length;
+
+    if (hasPartialSubOptions) {
+      toast.error("Select both Blackwall and Silvertown, or leave both empty");
       return;
     }
 
@@ -474,7 +571,10 @@ export default function CategoryManagement(): React.JSX.Element {
               <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center w-[25%]">
                 Discounted Charge
               </TableHead>
-              <TableHead className="font-semibold text-slate-700 h-14 px-8 text-center w-[20%]">
+              <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center w-[20%]">
+                Return Price
+              </TableHead>
+              <TableHead className="font-semibold text-slate-700 h-14 px-8 text-center w-[15%]">
                 Action
               </TableHead>
             </TableRow>
@@ -497,6 +597,9 @@ export default function CategoryManagement(): React.JSX.Element {
                   </TableCell>
                   <TableCell className="px-6 py-5 font-normal text-slate-500 text-center">
                     {formatMoney(category.rateDiscounted)}
+                  </TableCell>
+                  <TableCell className="px-6 py-5 font-normal text-slate-500 text-center">
+                    {formatMoney(category.returnPrice)}
                   </TableCell>
 
                   <TableCell className="px-8 py-5 text-center">
@@ -532,7 +635,7 @@ export default function CategoryManagement(): React.JSX.Element {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center py-12 text-slate-400 font-medium"
                 >
                   No matching category details found.
@@ -615,6 +718,7 @@ export default function CategoryManagement(): React.JSX.Element {
           }
         }}
         onFieldChange={updateFormField}
+        onSubOptionsChange={updateSubOptions}
         onIconChange={updateFormIcon}
         onSubmit={submitCategoryForm}
       />
@@ -657,6 +761,14 @@ export default function CategoryManagement(): React.JSX.Element {
               <DetailItem
                 label="Discounted Charge"
                 value={formatMoney(selectedCategory.rateDiscounted)}
+              />
+              <DetailItem
+                label="Return Price"
+                value={formatMoney(selectedCategory.returnPrice)}
+              />
+              <DetailItem
+                label="Sub Options"
+                value={formatSubOptionsDisplay(selectedCategory.subOptions)}
               />
               <DetailItem
                 label="Status"
@@ -716,13 +828,13 @@ function CategoryTableSkeleton() {
     <>
       {Array.from({ length: 6 }).map((_, rowIndex) => (
         <TableRow key={rowIndex} className="border-slate-100">
-          {Array.from({ length: 4 }).map((__, cellIndex) => (
+          {Array.from({ length: 5 }).map((__, cellIndex) => (
             <TableCell key={cellIndex} className="px-6 py-5">
               <Skeleton
                 className={`mx-auto h-4 ${
                   cellIndex === 0
                     ? "w-40"
-                    : cellIndex === 3
+                    : cellIndex === 4
                       ? "w-20"
                       : "w-24"
                 }`}
@@ -745,6 +857,7 @@ function CategoryFormDialog({
   currentIconUrl,
   onOpenChange,
   onFieldChange,
+  onSubOptionsChange,
   onIconChange,
   onSubmit,
 }: {
@@ -756,7 +869,8 @@ function CategoryFormDialog({
   submitLabel: string;
   currentIconUrl?: string;
   onOpenChange: (open: boolean) => void;
-  onFieldChange: (field: keyof CategoryFormState, value: string) => void;
+  onFieldChange: (field: CategoryTextFormField, value: string) => void;
+  onSubOptionsChange: (subOptions: string[]) => void;
   onIconChange: (file: File | null) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
@@ -788,32 +902,49 @@ function CategoryFormDialog({
         <form className="space-y-4" onSubmit={onSubmit}>
           <FormField
             label="Journey Name"
+            name="name"
             value={form.name}
             onChange={(value) => onFieldChange("name", value)}
-            placeholder="Category 6"
+            placeholder="Tunnel Charges"
           />
           <FormField
             label="Short Details"
+            name="shortDetails"
             value={form.shortDetails}
             onChange={(value) => onFieldChange("shortDetails", value)}
-            placeholder="Category 9"
+            placeholder="Covers Blackwall and Silvertown tunnel crossings"
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <FormField
               label="Actual Charge"
+              name="rateActual"
               type="number"
               value={form.rateActual}
               onChange={(value) => onFieldChange("rateActual", value)}
-              placeholder="30"
+              placeholder="2.50"
             />
             <FormField
               label="Discounted Charge"
+              name="rateDiscounted"
               type="number"
               value={form.rateDiscounted}
               onChange={(value) => onFieldChange("rateDiscounted", value)}
-              placeholder="20"
+              placeholder="2.00"
+            />
+            <FormField
+              label="Return Price"
+              name="returnPrice"
+              type="number"
+              value={form.returnPrice}
+              onChange={(value) => onFieldChange("returnPrice", value)}
+              placeholder="4.00"
             />
           </div>
+          <SubOptionsMultiSelect
+            label="Sub Options"
+            value={form.subOptions}
+            onChange={onSubOptionsChange}
+          />
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 block">
@@ -828,6 +959,7 @@ function CategoryFormDialog({
               />
             ) : null}
             <input
+              name="icon"
               type="file"
               accept="image/*"
               onChange={(event) =>
@@ -855,28 +987,130 @@ function CategoryFormDialog({
   );
 }
 
+function SubOptionsMultiSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel =
+    value.length > 0 ? value.join(", ") : "Select sub options";
+
+  const toggleOption = (option: (typeof CATEGORY_SUB_OPTIONS)[number]) => {
+    const isSelected = value.includes(option);
+
+    if (isSelected) {
+      onChange(value.filter((selectedOption) => selectedOption !== option));
+      return;
+    }
+
+    onChange([...value, option]);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-700 block">{label}</label>
+      <input type="hidden" name="subOptions" value={JSON.stringify(value)} />
+      <div
+        className="relative"
+        onBlur={(event) => {
+          if (
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
+            setIsOpen(false);
+          }
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setIsOpen((current) => !current)}
+          className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          aria-expanded={isOpen}
+        >
+          <span
+            className={
+              value.length > 0 ? "text-slate-700" : "text-slate-400"
+            }
+          >
+            {selectedLabel}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-slate-400 transition ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {isOpen ? (
+          <div className="absolute z-50 mt-2 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+            {CATEGORY_SUB_OPTIONS.map((option) => {
+              const isSelected = value.includes(option);
+              const optionId = `sub-option-${option.toLowerCase()}`;
+
+              return (
+                <div
+                  key={option}
+                  className="flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Checkbox
+                    id={optionId}
+                    checked={isSelected}
+                    onCheckedChange={() => toggleOption(option)}
+                    className="data-[state=checked]:border-[#004EAF] data-[state=checked]:bg-[#004EAF]"
+                  />
+                  <label
+                    htmlFor={optionId}
+                    className="flex-1 cursor-pointer select-none"
+                  >
+                    {option}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function FormField({
   label,
+  name,
   value,
   onChange,
   placeholder,
   type = "text",
 }: {
   label: string;
+  name: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
 }) {
+  const isNumberInput = type === "number";
+
   return (
     <div className="space-y-2">
       <label className="text-xs font-bold text-slate-700 block">{label}</label>
       <input
+        name={name}
         type={type}
+        step={isNumberInput ? "any" : undefined}
+        inputMode={isNumberInput ? "decimal" : undefined}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+          isNumberInput
+            ? "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
+            : ""
+        }`}
       />
     </div>
   );
