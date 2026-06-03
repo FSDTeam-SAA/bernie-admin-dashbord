@@ -482,16 +482,7 @@ export default function CategoryManagement(): React.JSX.Element {
       categoryForm.rateDiscounted &&
       Number.isNaN(Number(categoryForm.rateDiscounted))
     ) {
-      toast.error("Discounted price must be a number");
-      return;
-    }
-
-    if (
-      categoryForm.returnPriceEnabled &&
-      categoryForm.returnPrice &&
-      Number.isNaN(Number(categoryForm.returnPrice))
-    ) {
-      toast.error("Return trip price must be a number");
+      toast.error("Discounted charge must be a number");
       return;
     }
 
@@ -753,7 +744,7 @@ export default function CategoryManagement(): React.JSX.Element {
         open={Boolean(viewCategoryId)}
         onOpenChange={(open) => !open && setViewCategoryId(null)}
       >
-        <DialogContent className="sm:max-w-xl mx">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Category Details</DialogTitle>
             <DialogDescription>
@@ -921,7 +912,7 @@ function CategoryFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -968,7 +959,10 @@ function CategoryFormDialog({
               placeholder="4.00"
               disabled={!form.returnPriceEnabled}
               action={
-                <label htmlFor="return-price-enabled" className="flex">
+                <label
+                  htmlFor="return-price-enabled"
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-600"
+                >
                   <Checkbox
                     id="return-price-enabled"
                     checked={form.returnPriceEnabled}
@@ -977,6 +971,7 @@ function CategoryFormDialog({
                     }
                     className="data-[state=checked]:border-[#004EAF] data-[state=checked]:bg-[#004EAF]"
                   />
+                  Enable
                 </label>
               }
             />
@@ -1086,17 +1081,13 @@ function FormField({
 
   return (
     <div className="space-y-2">
-      <div className="flex min-h-4 items-center gap-2">
-        {action}
-        <label
-          htmlFor={name}
-          className="block text-xs font-bold text-slate-700"
-        >
+      <div className="flex min-h-4 items-center justify-between gap-3">
+        <label className="text-xs font-bold text-slate-700 block">
           {label}
         </label>
+        {action}
       </div>
       <input
-        id={name}
         name={name}
         type={type}
         step={isNumberInput ? "any" : undefined}
