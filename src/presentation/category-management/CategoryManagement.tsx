@@ -830,8 +830,11 @@ export default function CategoryManagement(): React.JSX.Element {
               onClick={() =>
                 deleteTarget && deleteCategoryMutation.mutate(deleteTarget._id)
               }
+
+
+              
             >
-              {deleteCategoryMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteCategoryMutation.isPending ? "Deleting......" : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
