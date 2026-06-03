@@ -722,7 +722,7 @@ function InsuranceFormDialog({
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-700">
-              Insurance Name
+              Insurance Names
             </label>
             <input
               type="text"
