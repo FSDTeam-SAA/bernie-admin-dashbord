@@ -5,7 +5,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Eye,
   Trash2,
   Pencil,
@@ -86,13 +85,14 @@ interface CategoryFormState {
   rateActual: string;
   rateDiscounted: string;
   returnPrice: string;
+  returnPriceEnabled: boolean;
   subOptions: string[];
   icon: File | null;
 }
 
 type CategoryTextFormField = Exclude<
   keyof CategoryFormState,
-  "subOptions" | "icon"
+  "returnPriceEnabled" | "subOptions" | "icon"
 >;
 
 const CATEGORY_SUB_OPTIONS = ["Blackwall", "Silvertown"] as const;
@@ -103,6 +103,7 @@ const emptyForm: CategoryFormState = {
   rateActual: "",
   rateDiscounted: "",
   returnPrice: "",
+  returnPriceEnabled: false,
   subOptions: [],
   icon: null,
 };
@@ -174,7 +175,10 @@ const buildCategoryFormData = (form: CategoryFormState) => {
   formData.append("shortDetails", form.shortDetails.trim());
   formData.append("rateActual", form.rateActual);
   formData.append("rateDiscounted", form.rateDiscounted);
-  formData.append("returnPrice", form.returnPrice);
+  formData.append(
+    "returnPrice",
+    form.returnPriceEnabled ? form.returnPrice || "0" : "",
+  );
   formData.append("subOptions", buildSubOptionsPayload(form.subOptions));
 
   if (form.icon) {
@@ -416,6 +420,8 @@ export default function CategoryManagement(): React.JSX.Element {
   };
 
   const openEditDialog = (category: Category) => {
+    const normalizedSubOptions = normalizeSubOptions(category.subOptions);
+
     setEditingCategory(category);
     setCategoryForm({
       name: category.name,
@@ -429,7 +435,9 @@ export default function CategoryManagement(): React.JSX.Element {
         typeof category.returnPrice === "number"
           ? String(category.returnPrice)
           : "",
-      subOptions: normalizeSubOptions(category.subOptions),
+      returnPriceEnabled: typeof category.returnPrice === "number",
+      subOptions:
+        normalizedSubOptions.length > 0 ? [...CATEGORY_SUB_OPTIONS] : [],
       icon: null,
     });
   };
@@ -440,6 +448,14 @@ export default function CategoryManagement(): React.JSX.Element {
 
   const updateSubOptions = (subOptions: string[]) => {
     setCategoryForm((prev) => ({ ...prev, subOptions }));
+  };
+
+  const updateReturnPriceEnabled = (checked: boolean) => {
+    setCategoryForm((prev) => ({
+      ...prev,
+      returnPriceEnabled: checked,
+      returnPrice: checked ? prev.returnPrice : "",
+    }));
   };
 
   const updateFormIcon = (file: File | null) => {
@@ -458,7 +474,7 @@ export default function CategoryManagement(): React.JSX.Element {
       !categoryForm.rateActual ||
       Number.isNaN(Number(categoryForm.rateActual))
     ) {
-      toast.error("Actual charge is required");
+      toast.error("One way price is required");
       return;
     }
 
@@ -466,17 +482,26 @@ export default function CategoryManagement(): React.JSX.Element {
       categoryForm.rateDiscounted &&
       Number.isNaN(Number(categoryForm.rateDiscounted))
     ) {
-      toast.error("Discounted charge must be a number");
+      toast.error("Discounted price must be a number");
       return;
     }
 
     if (
-      !categoryForm.returnPrice ||
+      categoryForm.returnPriceEnabled &&
+      categoryForm.returnPrice &&
       Number.isNaN(Number(categoryForm.returnPrice))
     ) {
-      toast.error("Return price is required");
+      toast.error("Return trip price must be a number");
       return;
     }
+
+    // if (
+    //   !categoryForm.returnPrice ||
+    //   Number.isNaN(Number(categoryForm.returnPrice))
+    // ) {
+    //   toast.error("Return price is required");
+    //   return;
+    // }
 
     const selectedSubOptionsCount = categoryForm.subOptions.length;
     const hasPartialSubOptions =
@@ -566,13 +591,13 @@ export default function CategoryManagement(): React.JSX.Element {
                 Journey Name
               </TableHead>
               <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center w-[20%]">
-                Actual Charge
+                One Way Price
               </TableHead>
               <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center w-[25%]">
-                Discounted Charge
+                Discounted Price
               </TableHead>
               <TableHead className="font-semibold text-slate-700 h-14 px-6 text-center w-[20%]">
-                Return Price
+                Return Trip Price
               </TableHead>
               <TableHead className="font-semibold text-slate-700 h-14 px-8 text-center w-[15%]">
                 Action
@@ -718,6 +743,7 @@ export default function CategoryManagement(): React.JSX.Element {
           }
         }}
         onFieldChange={updateFormField}
+        onReturnPriceEnabledChange={updateReturnPriceEnabled}
         onSubOptionsChange={updateSubOptions}
         onIconChange={updateFormIcon}
         onSubmit={submitCategoryForm}
@@ -727,7 +753,7 @@ export default function CategoryManagement(): React.JSX.Element {
         open={Boolean(viewCategoryId)}
         onOpenChange={(open) => !open && setViewCategoryId(null)}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl mx">
           <DialogHeader>
             <DialogTitle>Category Details</DialogTitle>
             <DialogDescription>
@@ -755,15 +781,15 @@ export default function CategoryManagement(): React.JSX.Element {
                 value={selectedCategory.shortDetails || "N/A"}
               />
               <DetailItem
-                label="Actual Charge"
+                label="One Way Price"
                 value={formatMoney(selectedCategory.rateActual)}
               />
               <DetailItem
-                label="Discounted Charge"
+                label="Discounted Price"
                 value={formatMoney(selectedCategory.rateDiscounted)}
               />
               <DetailItem
-                label="Return Price"
+                label="Return Trip Price"
                 value={formatMoney(selectedCategory.returnPrice)}
               />
               <DetailItem
@@ -857,6 +883,7 @@ function CategoryFormDialog({
   currentIconUrl,
   onOpenChange,
   onFieldChange,
+  onReturnPriceEnabledChange,
   onSubOptionsChange,
   onIconChange,
   onSubmit,
@@ -870,6 +897,7 @@ function CategoryFormDialog({
   currentIconUrl?: string;
   onOpenChange: (open: boolean) => void;
   onFieldChange: (field: CategoryTextFormField, value: string) => void;
+  onReturnPriceEnabledChange: (checked: boolean) => void;
   onSubOptionsChange: (subOptions: string[]) => void;
   onIconChange: (file: File | null) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -893,7 +921,7 @@ function CategoryFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -916,7 +944,7 @@ function CategoryFormDialog({
           />
           <div className="grid gap-4 sm:grid-cols-3">
             <FormField
-              label="Actual Charge"
+              label="One Way Price"
               name="rateActual"
               type="number"
               value={form.rateActual}
@@ -924,7 +952,7 @@ function CategoryFormDialog({
               placeholder="2.50"
             />
             <FormField
-              label="Discounted Charge"
+              label="Discounted Price"
               name="rateDiscounted"
               type="number"
               value={form.rateDiscounted}
@@ -932,12 +960,25 @@ function CategoryFormDialog({
               placeholder="2.00"
             />
             <FormField
-              label="Return Price"
+              label="Return Trip Price"
               name="returnPrice"
               type="number"
               value={form.returnPrice}
               onChange={(value) => onFieldChange("returnPrice", value)}
               placeholder="4.00"
+              disabled={!form.returnPriceEnabled}
+              action={
+                <label htmlFor="return-price-enabled" className="flex">
+                  <Checkbox
+                    id="return-price-enabled"
+                    checked={form.returnPriceEnabled}
+                    onCheckedChange={(checked) =>
+                      onReturnPriceEnabledChange(checked === true)
+                    }
+                    className="data-[state=checked]:border-[#004EAF] data-[state=checked]:bg-[#004EAF]"
+                  />
+                </label>
+              }
             />
           </div>
           <SubOptionsMultiSelect
@@ -996,83 +1037,27 @@ function SubOptionsMultiSelect({
   value: string[];
   onChange: (value: string[]) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedLabel =
-    value.length > 0 ? value.join(", ") : "Select sub options";
-
-  const toggleOption = (option: (typeof CATEGORY_SUB_OPTIONS)[number]) => {
-    const isSelected = value.includes(option);
-
-    if (isSelected) {
-      onChange(value.filter((selectedOption) => selectedOption !== option));
-      return;
-    }
-
-    onChange([...value, option]);
-  };
+  const isSelected = value.length === CATEGORY_SUB_OPTIONS.length;
 
   return (
     <div className="space-y-2">
       <label className="text-xs font-bold text-slate-700 block">{label}</label>
       <input type="hidden" name="subOptions" value={JSON.stringify(value)} />
-      <div
-        className="relative"
-        onBlur={(event) => {
-          if (
-            !event.currentTarget.contains(event.relatedTarget as Node | null)
-          ) {
-            setIsOpen(false);
+      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+        <Checkbox
+          id="sub-options-all"
+          checked={isSelected}
+          onCheckedChange={(checked) =>
+            onChange(checked === true ? [...CATEGORY_SUB_OPTIONS] : [])
           }
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setIsOpen((current) => !current)}
-          className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-expanded={isOpen}
+          className="data-[state=checked]:border-[#004EAF] data-[state=checked]:bg-[#004EAF]"
+        />
+        <label
+          htmlFor="sub-options-all"
+          className="flex-1 cursor-pointer select-none text-sm font-medium text-slate-700"
         >
-          <span
-            className={
-              value.length > 0 ? "text-slate-700" : "text-slate-400"
-            }
-          >
-            {selectedLabel}
-          </span>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-slate-400 transition ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-
-        {isOpen ? (
-          <div className="absolute z-50 mt-2 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-            {CATEGORY_SUB_OPTIONS.map((option) => {
-              const isSelected = value.includes(option);
-              const optionId = `sub-option-${option.toLowerCase()}`;
-
-              return (
-                <div
-                  key={option}
-                  className="flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  <Checkbox
-                    id={optionId}
-                    checked={isSelected}
-                    onCheckedChange={() => toggleOption(option)}
-                    className="data-[state=checked]:border-[#004EAF] data-[state=checked]:bg-[#004EAF]"
-                  />
-                  <label
-                    htmlFor={optionId}
-                    className="flex-1 cursor-pointer select-none"
-                  >
-                    {option}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+          Blackwall and Silvertown
+        </label>
       </div>
     </div>
   );
@@ -1085,6 +1070,8 @@ function FormField({
   onChange,
   placeholder,
   type = "text",
+  disabled = false,
+  action,
 }: {
   label: string;
   name: string;
@@ -1092,21 +1079,33 @@ function FormField({
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  disabled?: boolean;
+  action?: React.ReactNode;
 }) {
   const isNumberInput = type === "number";
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-700 block">{label}</label>
+      <div className="flex min-h-4 items-center gap-2">
+        {action}
+        <label
+          htmlFor={name}
+          className="block text-xs font-bold text-slate-700"
+        >
+          {label}
+        </label>
+      </div>
       <input
+        id={name}
         name={name}
         type={type}
         step={isNumberInput ? "any" : undefined}
         inputMode={isNumberInput ? "decimal" : undefined}
         value={value}
         placeholder={placeholder}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+        className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${
           isNumberInput
             ? "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
             : ""
@@ -1115,7 +1114,6 @@ function FormField({
     </div>
   );
 }
-
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-slate-100 p-4">
