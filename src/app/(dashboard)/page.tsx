@@ -8,7 +8,7 @@ import React from 'react'
 function page() {
   return (
     <div>
-      <DashboardHeader title="Dashboard Overviews" />
+      <DashboardHeader title="Dashboard Overview" />
       <OverviewCard />
       <div className="mt-6 grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <EarningOverview />
