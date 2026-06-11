@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import {
-  canAccessPermission,
-  getFirstAllowedRoute,
-  getRequiredPermissionForPath,
-} from "@/lib/team-permissions";
 
 const authRoutes = [
   "/signin",
@@ -13,11 +8,6 @@ const authRoutes = [
   "/forgot-password",
   "/otp-verify",
   "/reset-password",
-];
-
-const sessionCookieNames = [
-  "next-auth.session-token",
-  "__Secure-next-auth.session-token",
 ];
 
 function isAuthRoute(pathname: string) {
@@ -34,28 +24,13 @@ function redirectToSignin(request: NextRequest, reason?: string) {
   }
 
   if (!isAuthRoute(request.nextUrl.pathname)) {
-    signinUrl.searchParams.set("callbackUrl", request.nextUrl.href);
+    signinUrl.searchParams.set(
+      "callbackUrl",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    );
   }
 
   return NextResponse.redirect(signinUrl);
-}
-
-function clearSessionCookies(response: NextResponse) {
-  sessionCookieNames.forEach((cookieName) => {
-    response.cookies.delete(cookieName);
-  });
-
-  return response;
-}
-
-function redirectToAllowedRoute(request: NextRequest, permissions?: string[]) {
-  const fallbackRoute = getFirstAllowedRoute(permissions);
-
-  if (fallbackRoute) {
-    return NextResponse.redirect(new URL(fallbackRoute, request.url));
-  }
-
-  return clearSessionCookies(redirectToSignin(request, "AccessDenied"));
 }
 
 export async function middleware(request: NextRequest) {
@@ -71,30 +46,8 @@ export async function middleware(request: NextRequest) {
     return authRoute ? NextResponse.next() : redirectToSignin(request);
   }
 
-  if (!["SUPER_ADMIN", "ADMIN"].includes(String(token.role))) {
-    return clearSessionCookies(redirectToSignin(request, "AccessDenied"));
-  }
-
   if (authRoute) {
     return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (token.role === "ADMIN") {
-    const permissions = Array.isArray(token.permissions)
-      ? token.permissions
-      : [];
-    const requiredPermission = getRequiredPermissionForPath(pathname);
-
-    if (
-      requiredPermission &&
-      !canAccessPermission(permissions, requiredPermission)
-    ) {
-      return redirectToAllowedRoute(request, permissions);
-    }
-
-    if (!requiredPermission) {
-      return redirectToAllowedRoute(request, permissions);
-    }
   }
 
   return NextResponse.next();
