@@ -42,6 +42,7 @@ interface Category {
   returnPrice?: number;
   subOptions?: string[] | string;
   icon?: string;
+  hasLateFee?: boolean | string;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -74,7 +75,10 @@ interface SingleCategoryApiResponse {
 
 interface SettingsApiResponse {
   data?: {
-    lateFee: number;
+    lateFee?: number;
+    lateFee1?: number;
+    lateFee2?: number;
+    lateFee3?: number;
   };
   message?: string;
 }
@@ -88,14 +92,34 @@ interface CategoryFormState {
   returnPriceEnabled: boolean;
   subOptions: string[];
   icon: File | null;
+  hasLateFee: boolean;
 }
 
 type CategoryTextFormField = Exclude<
   keyof CategoryFormState,
-  "returnPriceEnabled" | "subOptions" | "icon"
+  "returnPriceEnabled" | "subOptions" | "icon" | "hasLateFee"
 >;
 
+type LateFeeField = "lateFee1" | "lateFee2" | "lateFee3";
+
+interface LateFeeFormState {
+  lateFee1: string;
+  lateFee2: string;
+  lateFee3: string;
+}
+
+interface LateFeePayload {
+  lateFee1: number;
+  lateFee2: number;
+  lateFee3: number;
+}
+
 const CATEGORY_SUB_OPTIONS = ["Blackwall", "Silvertown"] as const;
+const LATE_FEE_FIELDS: { key: LateFeeField; label: string }[] = [
+  { key: "lateFee1", label: "Day 1" },
+  { key: "lateFee2", label: "Day 2" },
+  { key: "lateFee3", label: "Day 3" },
+];
 
 const emptyForm: CategoryFormState = {
   name: "",
@@ -106,6 +130,13 @@ const emptyForm: CategoryFormState = {
   returnPriceEnabled: false,
   subOptions: [],
   icon: null,
+  hasLateFee: false,
+};
+
+const emptyLateFeeForm: LateFeeFormState = {
+  lateFee1: "",
+  lateFee2: "",
+  lateFee3: "",
 };
 
 const readJsonResponse = async <T,>(res: Response): Promise<T> => {
@@ -169,17 +200,27 @@ const formatSubOptionsDisplay = (subOptions?: Category["subOptions"]) =>
 const buildSubOptionsPayload = (value: string[]) =>
   JSON.stringify(normalizeSubOptions(value));
 
+const isTruthyFlag = (value?: boolean | string) =>
+  value === true ||
+  (typeof value === "string" && value.toLowerCase() === "true");
+
+const buildCategoryPayload = (form: CategoryFormState) => ({
+  name: form.name.trim(),
+  shortDetails: form.shortDetails.trim(),
+  rateActual: form.rateActual,
+  rateDiscounted: form.rateDiscounted,
+  returnPrice: form.returnPriceEnabled ? form.returnPrice || "0" : "",
+  subOptions: buildSubOptionsPayload(form.subOptions),
+  hasLateFee: form.hasLateFee,
+});
+
 const buildCategoryFormData = (form: CategoryFormState) => {
   const formData = new FormData();
-  formData.append("name", form.name.trim());
-  formData.append("shortDetails", form.shortDetails.trim());
-  formData.append("rateActual", form.rateActual);
-  formData.append("rateDiscounted", form.rateDiscounted);
-  formData.append(
-    "returnPrice",
-    form.returnPriceEnabled ? form.returnPrice || "0" : "",
-  );
-  formData.append("subOptions", buildSubOptionsPayload(form.subOptions));
+  const payload = buildCategoryPayload(form);
+
+  Object.entries(payload).forEach(([key, value]) => {
+    formData.append(key, String(value));
+  });
 
   if (form.icon) {
     formData.append("icon", form.icon);
@@ -188,13 +229,40 @@ const buildCategoryFormData = (form: CategoryFormState) => {
   return formData;
 };
 
+const buildCategoryFormState = (category: Category): CategoryFormState => {
+  const normalizedSubOptions = normalizeSubOptions(category.subOptions);
+
+  return {
+    name: category.name,
+    shortDetails: category.shortDetails || "",
+    rateActual: String(category.rateActual),
+    rateDiscounted:
+      typeof category.rateDiscounted === "number"
+        ? String(category.rateDiscounted)
+        : "",
+    returnPrice:
+      typeof category.returnPrice === "number"
+        ? String(category.returnPrice)
+        : "",
+    returnPriceEnabled: typeof category.returnPrice === "number",
+    subOptions:
+      normalizedSubOptions.length > 0 ? [...CATEGORY_SUB_OPTIONS] : [],
+    icon: null,
+    hasLateFee: isTruthyFlag(category.hasLateFee),
+  };
+};
+
 export default function CategoryManagement(): React.JSX.Element {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [lateFee, setLateFee] = useState("");
+  const [lateFeeForm, setLateFeeForm] =
+    useState<LateFeeFormState>(emptyLateFeeForm);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [preparingEditCategoryId, setPreparingEditCategoryId] = useState<
+    string | null
+  >(null);
   const [viewCategoryId, setViewCategoryId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [categoryForm, setCategoryForm] =
@@ -226,13 +294,28 @@ export default function CategoryManagement(): React.JSX.Element {
       return response;
     },
   });
+  const fetchedSettings = settingsQuery.data?.data;
 
   useEffect(() => {
-    const fetchedLateFee = settingsQuery.data?.data?.lateFee;
-    if (typeof fetchedLateFee === "number") {
-      setLateFee(String(fetchedLateFee));
+    if (fetchedSettings) {
+      setLateFeeForm({
+        lateFee1:
+          typeof fetchedSettings.lateFee1 === "number"
+            ? String(fetchedSettings.lateFee1)
+            : typeof fetchedSettings.lateFee === "number"
+              ? String(fetchedSettings.lateFee)
+              : "",
+        lateFee2:
+          typeof fetchedSettings.lateFee2 === "number"
+            ? String(fetchedSettings.lateFee2)
+            : "",
+        lateFee3:
+          typeof fetchedSettings.lateFee3 === "number"
+            ? String(fetchedSettings.lateFee3)
+            : "",
+      });
     }
-  }, [settingsQuery.data?.data?.lateFee]);
+  }, [fetchedSettings]);
 
   const categoryQuery = useQuery<CategoryApiResponse>({
     queryKey: ["categories", searchQuery, currentPage],
@@ -294,14 +377,14 @@ export default function CategoryManagement(): React.JSX.Element {
   );
 
   const lateFeeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (payload: LateFeePayload) => {
       const res = await fetch(`${apiBaseUrl}/journeys/settings/late-fee`, {
         method: "PUT",
         headers: {
           ...authHeaders,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ lateFee: Number(lateFee) }),
+        body: JSON.stringify(payload),
       });
       const response = await readJsonResponse<SettingsApiResponse>(res);
 
@@ -358,10 +441,18 @@ export default function CategoryManagement(): React.JSX.Element {
       id: string;
       form: CategoryFormState;
     }) => {
+      const hasIconUpload = Boolean(form.icon);
       const res = await fetch(`${apiBaseUrl}/categories/${id}`, {
         method: "PUT",
-        headers: authHeaders,
-        body: buildCategoryFormData(form),
+        headers: hasIconUpload
+          ? authHeaders
+          : {
+              ...authHeaders,
+              "Content-Type": "application/json",
+            },
+        body: hasIconUpload
+          ? buildCategoryFormData(form)
+          : JSON.stringify(buildCategoryPayload(form)),
       });
       const response = await readJsonResponse<{ message?: string }>(res);
 
@@ -419,31 +510,39 @@ export default function CategoryManagement(): React.JSX.Element {
     setIsAddOpen(true);
   };
 
-  const openEditDialog = (category: Category) => {
-    const normalizedSubOptions = normalizeSubOptions(category.subOptions);
+  const openEditDialog = async (category: Category) => {
+    setPreparingEditCategoryId(category._id);
 
-    setEditingCategory(category);
-    setCategoryForm({
-      name: category.name,
-      shortDetails: category.shortDetails || "",
-      rateActual: String(category.rateActual),
-      rateDiscounted:
-        typeof category.rateDiscounted === "number"
-          ? String(category.rateDiscounted)
-          : "",
-      returnPrice:
-        typeof category.returnPrice === "number"
-          ? String(category.returnPrice)
-          : "",
-      returnPriceEnabled: typeof category.returnPrice === "number",
-      subOptions:
-        normalizedSubOptions.length > 0 ? [...CATEGORY_SUB_OPTIONS] : [],
-      icon: null,
-    });
+    try {
+      const res = await fetch(`${apiBaseUrl}/categories/${category._id}`);
+      const response = await readJsonResponse<SingleCategoryApiResponse>(res);
+
+      if (!res.ok) {
+        throw new Error(
+          response?.message || "Failed to fetch category details",
+        );
+      }
+
+      const latestCategory = response.data || category;
+      setEditingCategory(latestCategory);
+      setCategoryForm(buildCategoryFormState(latestCategory));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch category details",
+      );
+    } finally {
+      setPreparingEditCategoryId(null);
+    }
   };
 
   const updateFormField = (field: CategoryTextFormField, value: string) => {
     setCategoryForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateLateFeeField = (field: LateFeeField, value: string) => {
+    setLateFeeForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateSubOptions = (subOptions: string[]) => {
@@ -460,6 +559,29 @@ export default function CategoryManagement(): React.JSX.Element {
 
   const updateFormIcon = (file: File | null) => {
     setCategoryForm((prev) => ({ ...prev, icon: file }));
+  };
+
+  const updateHasLateFee = (checked: boolean) => {
+    setCategoryForm((prev) => ({ ...prev, hasLateFee: checked }));
+  };
+
+  const submitLateFee = () => {
+    const invalidField = LATE_FEE_FIELDS.find(({ key }) => {
+      const value = lateFeeForm[key].trim();
+      const amount = Number(value);
+      return !value || !Number.isFinite(amount) || amount < 0;
+    });
+
+    if (invalidField) {
+      toast.error(`${invalidField.label} late fee must be a valid amount`);
+      return;
+    }
+
+    lateFeeMutation.mutate({
+      lateFee1: Number(lateFeeForm.lateFee1),
+      lateFee2: Number(lateFeeForm.lateFee2),
+      lateFee3: Number(lateFeeForm.lateFee3),
+    });
   };
 
   const submitCategoryForm = (event: React.FormEvent<HTMLFormElement>) => {
@@ -518,17 +640,26 @@ export default function CategoryManagement(): React.JSX.Element {
   return (
     <div className="w-full">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-2">
+        <div className="space-y-2 w-full md:max-w-3xl">
           <label className="text-xs font-bold text-slate-700 block">
             Set Late Fee
           </label>
-          <div className="relative flex items-center max-w-lg bg-[#E2E8F0] rounded p-1.5 pr-2">
-            <input
-              type="number"
-              value={lateFee}
-              onChange={(e) => setLateFee(e.target.value)}
-              className="bg-transparent border-0 pl-3 w-full text-sm font-medium text-slate-600 placeholder-slate-400 focus:outline-none"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            {LATE_FEE_FIELDS.map(({ key, label }) => (
+              <label key={key} className="min-w-0 flex-1">
+                <span className="mb-1 block text-[11px] font-semibold text-slate-500">
+                  {label}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={lateFeeForm[key]}
+                  onChange={(e) => updateLateFeeField(key, e.target.value)}
+                  className="h-10 w-full rounded bg-[#E2E8F0] px-3 text-sm font-medium text-slate-600 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
+                />
+              </label>
+            ))}
             <button
               type="button"
               disabled={
@@ -536,8 +667,10 @@ export default function CategoryManagement(): React.JSX.Element {
                 status !== "authenticated" ||
                 !TOKEN
               }
-              onClick={() => lateFeeMutation.mutate()}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0052B4] text-white hover:bg-blue-700 transition shadow-sm disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
+              onClick={submitLateFee}
+              className="flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-lg bg-[#0052B4] text-white shadow-sm transition hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60 sm:self-end cursor-pointer"
+              aria-label="Update late fee"
+              title="Update late fee"
             >
               <Pencil className="w-4 h-4 fill-white text-[#0052B4] stroke-2" />
             </button>
@@ -638,8 +771,9 @@ export default function CategoryManagement(): React.JSX.Element {
                       </button>
                       <button
                         type="button"
-                        onClick={() => openEditDialog(category)}
-                        className="text-slate-600 hover:text-green-600 transition cursor-pointer"
+                        disabled={preparingEditCategoryId === category._id}
+                        onClick={() => void openEditDialog(category)}
+                        className="text-slate-600 hover:text-green-600 transition disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
                         aria-label="Edit category"
                       >
                         <Pencil className="w-4 h-4" />
@@ -737,6 +871,7 @@ export default function CategoryManagement(): React.JSX.Element {
         onReturnPriceEnabledChange={updateReturnPriceEnabled}
         onSubOptionsChange={updateSubOptions}
         onIconChange={updateFormIcon}
+        onHasLateFeeChange={updateHasLateFee}
         onSubmit={submitCategoryForm}
       />
 
@@ -786,6 +921,14 @@ export default function CategoryManagement(): React.JSX.Element {
               <DetailItem
                 label="Sub Options"
                 value={formatSubOptionsDisplay(selectedCategory.subOptions)}
+              />
+              <DetailItem
+                label="Late Fee"
+                value={
+                  isTruthyFlag(selectedCategory.hasLateFee)
+                    ? "Enabled"
+                    : "Disabled"
+                }
               />
               <DetailItem
                 label="Status"
@@ -880,6 +1023,7 @@ function CategoryFormDialog({
   onReturnPriceEnabledChange,
   onSubOptionsChange,
   onIconChange,
+  onHasLateFeeChange,
   onSubmit,
 }: {
   open: boolean;
@@ -894,6 +1038,7 @@ function CategoryFormDialog({
   onReturnPriceEnabledChange: (checked: boolean) => void;
   onSubOptionsChange: (subOptions: string[]) => void;
   onIconChange: (file: File | null) => void;
+  onHasLateFeeChange: (checked: boolean) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const [selectedIconPreview, setSelectedIconPreview] = useState<string | null>(
@@ -984,6 +1129,23 @@ function CategoryFormDialog({
             value={form.subOptions}
             onChange={onSubOptionsChange}
           />
+
+          <label
+            htmlFor="has-late-fee"
+            className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2"
+          >
+            <Checkbox
+              id="has-late-fee"
+              checked={form.hasLateFee}
+              onCheckedChange={(checked) =>
+                onHasLateFeeChange(checked === true)
+              }
+              className="data-[state=checked]:border-[#004EAF] data-[state=checked]:bg-[#004EAF]"
+            />
+            <span className="select-none text-sm font-medium text-slate-700">
+              Add late fee
+            </span>
+          </label>
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 block">
