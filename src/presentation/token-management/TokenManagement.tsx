@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Eye, Search, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Trash2,
+} from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -97,6 +104,10 @@ interface WinnerApiResponse {
   message?: string;
 }
 
+interface DeleteTokenApiResponse {
+  message?: string;
+}
+
 const readJsonResponse = async <T,>(res: Response): Promise<T> => {
   const text = await res.text();
   return text ? JSON.parse(text) : ({} as T);
@@ -120,6 +131,7 @@ export default function TokenManagement(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState("");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [deleteToken, setDeleteToken] = useState<Token | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
@@ -244,6 +256,41 @@ export default function TokenManagement(): React.JSX.Element {
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Failed to select winner",
+      );
+    },
+  });
+
+  const deleteTokenMutation = useMutation({
+    mutationFn: async (tokenId: string) => {
+      const res = await fetch(`${apiBaseUrl}/tokens/${tokenId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      const response = await readJsonResponse<DeleteTokenApiResponse>(res);
+
+      if (!res.ok) {
+        throw new Error(response?.message || "Failed to delete token");
+      }
+
+      return response;
+    },
+    onSuccess: async (response, tokenId) => {
+      toast.success(response?.message || "Token deleted successfully");
+      setDeleteToken(null);
+      setSelectedToken(null);
+      if (selectedTokenId === tokenId) setSelectedTokenId("");
+
+      if (tokens.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+      } else {
+        await tokenQuery.refetch();
+      }
+
+      await winnerQuery.refetch();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete token",
       );
     },
   });
@@ -413,14 +460,29 @@ export default function TokenManagement(): React.JSX.Element {
                     {formatDate(token.createdAt)}
                   </TableCell>
                   <TableCell className="px-6 py-5 text-center whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedToken(token)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:bg-slate-200"
-                      aria-label={`View details for ${token.userId?.name || "token"}`}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedToken(token)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                        aria-label={`View details for ${
+                          token.userId?.name || "token"
+                        }`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteToken(token)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:pointer-events-none disabled:opacity-60"
+                        aria-label={`Delete token for ${
+                          token.userId?.name || "token"
+                        }`}
+                        disabled={deleteTokenMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -513,6 +575,57 @@ export default function TokenManagement(): React.JSX.Element {
           {/* <DialogClose className="mt-6 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
             Close
           </DialogClose> */}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deleteToken)}
+        onOpenChange={(open) => {
+          if (!open && !deleteTokenMutation.isPending) setDeleteToken(null);
+        }}
+      >
+        <DialogContent
+          className="w-full sm:max-w-md"
+          showCloseButton={!deleteTokenMutation.isPending}
+        >
+          <DialogTitle>Delete Token</DialogTitle>
+          <DialogDescription className="text-sm text-slate-500">
+            Are you sure you want to delete this token? This action cannot be
+            undone.
+          </DialogDescription>
+
+          {deleteToken ? (
+            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+              <p className="text-sm font-bold text-slate-900">
+                {deleteToken.userId?.name || "N/A"}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {deleteToken.vehicleNumber || "N/A"} - Qty:{" "}
+                {deleteToken.quantity}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              disabled={deleteTokenMutation.isPending}
+              onClick={() => setDeleteToken(null)}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!deleteToken || deleteTokenMutation.isPending}
+              onClick={() => {
+                if (deleteToken) deleteTokenMutation.mutate(deleteToken._id);
+              }}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:pointer-events-none disabled:opacity-60"
+            >
+              {deleteTokenMutation.isPending ? "Deleting..." : "Delete"}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 
